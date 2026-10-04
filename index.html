@@ -1,0 +1,773 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Time tracker">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="format-detection" content="telephone=no">
+<meta name="theme-color" content="#FBFBF7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1A1F25" media="(prefers-color-scheme: dark)">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="manifest" href="manifest.webmanifest">
+<title>Time tracker</title>
+<meta name="description" content="Color in what you did each half hour of the day.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#FBFBF7; --grid:#DCE1E5; --grid-strong:#A3ACB4; --ink:#1E2932; --ink-soft:#5D6973;
+  --surface:#FFFFFF; --accent:#2E6CCB; --today:#FFF1B8; --now:#E0435C;
+  --hand:"Patrick Hand","Marker Felt","Comic Sans MS",cursive;
+  --body:"Atkinson Hyperlegible",-apple-system,"Helvetica Neue",Arial,sans-serif;
+  --row:36px;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#1A1F25; --grid:#2B323A; --grid-strong:#56616C; --ink:#E8ECEF; --ink-soft:#9BA7B1;
+    --surface:#222930; --accent:#7AA7EE; --today:#3B3420; --now:#FF6B80;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#1A1F25; --grid:#2B323A; --grid-strong:#56616C; --ink:#E8ECEF; --ink-soft:#9BA7B1;
+  --surface:#222930; --accent:#7AA7EE; --today:#3B3420; --now:#FF6B80;
+}
+*,*::before,*::after{box-sizing:inherit}
+[hidden]{display:none !important}
+html{scroll-padding-top:env(safe-area-inset-top,0px);-webkit-text-size-adjust:100%}
+body{
+  margin:0;color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.4;
+  background-color:var(--paper);
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:24px 24px;
+  -webkit-tap-highlight-color:transparent;
+}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.app{max-width:1100px;margin:0 auto;padding:0 max(14px,env(safe-area-inset-left,0px)) 40px max(14px,env(safe-area-inset-right,0px))}
+
+/* sticky top: clock + pencils */
+.sticky{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--paper);padding-top:10px;border-bottom:2px solid var(--ink);margin:0 -14px;padding-left:14px;padding-right:14px}
+.top{display:flex;align-items:flex-end;justify-content:space-between;gap:12px}
+.clock .time{font-family:var(--hand);font-size:clamp(38px,8.5vw,60px);line-height:.95;letter-spacing:.5px}
+.clock .date{color:var(--ink-soft);font-size:15px}
+.seg{display:flex;border:2px solid var(--ink);border-radius:10px;overflow:hidden;flex-shrink:0}
+.seg button{border:0;background:var(--surface);padding:9px 16px;min-height:44px;font-weight:700}
+.seg button[aria-selected="true"]{background:var(--ink);color:var(--paper)}
+.palette-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:12px;color:var(--ink-soft);font-size:14px}
+.linkbtn{border:0;background:none;color:var(--accent);font-weight:700;padding:8px 0;min-height:44px}
+.palette{display:flex;gap:8px;overflow-x:auto;padding:4px 2px 12px;scrollbar-width:thin;-webkit-overflow-scrolling:touch}
+.pencil{flex:0 0 auto;display:flex;align-items:center;gap:8px;min-height:44px;padding:6px 14px 6px 6px;border:2px solid var(--grid-strong);border-radius:999px;background:var(--surface);font-weight:700;font-size:15px;white-space:nowrap}
+.pencil .tip{width:30px;height:30px;border-radius:50%;background:var(--c);background-image:repeating-linear-gradient(115deg,rgba(255,255,255,.28) 0 1.5px,transparent 1.5px 4px);flex-shrink:0}
+.pencil.on{border-color:var(--ink);box-shadow:0 0 0 2px var(--ink) inset;transform:translateY(-2px)}
+.pencil.eraser .tip{background:var(--paper);border:2px dashed var(--grid-strong)}
+
+/* nav */
+.datenav{display:flex;align-items:center;gap:6px;margin:16px 0 10px;flex-wrap:wrap}
+.datenav h2{font-family:var(--hand);font-weight:400;font-size:28px;margin:0 4px;flex:1 1 auto;min-width:0}
+.icon{width:44px;height:44px;border:2px solid var(--ink);border-radius:10px;background:var(--surface);font-size:22px;line-height:1;display:grid;place-items:center}
+.pill{min-height:44px;padding:0 14px;border:2px solid var(--ink);border-radius:10px;background:var(--surface);font-weight:700}
+
+/* totals */
+.totals{display:flex;flex-wrap:wrap;gap:6px 14px;margin:0 0 12px;font-size:15px}
+.tot{display:inline-flex;align-items:center;gap:6px}
+.tot i{width:14px;height:14px;border-radius:3px;background:var(--c);display:inline-block}
+.empty{color:var(--ink-soft)}
+
+/* day timeline */
+.tl-wrap{position:relative;background:var(--surface);border:2px solid var(--ink);border-radius:6px}
+.timeline{display:grid;grid-template-columns:76px 1fr;grid-template-rows:repeat(48,var(--row))}
+.tl-label{grid-column:1;white-space:nowrap;user-select:none;-webkit-user-select:none;font-family:var(--hand);font-size:20px;padding:4px 10px 0;border-top:1px solid var(--grid-strong);border-right:2px solid var(--ink);color:var(--ink)}
+.tl-label.first{border-top:0}
+.tl-label.noon{background:color-mix(in srgb,var(--accent) 10%,transparent)}
+.slot{grid-column:2;border-top:1px dashed var(--grid);touch-action:none;position:relative;display:flex;align-items:center;padding:0 12px;user-select:none;-webkit-user-select:none}
+.slot.hour{border-top:1px solid var(--grid-strong)}
+.slot.s0{border-top:0}
+.fill{background-color:var(--c);background-image:repeating-linear-gradient(105deg,rgba(255,255,255,.22) 0 1.5px,transparent 1.5px 4px)}
+.slot.fill.cont{border-top-color:transparent}
+.slot span{font-weight:700;color:var(--t);font-size:15px;pointer-events:none}
+.nowline{position:absolute;left:70px;right:0;height:0;border-top:3px solid var(--now);pointer-events:none;z-index:2}
+.nowline::before{content:"";position:absolute;left:-6px;top:-8px;width:13px;height:13px;border-radius:50%;background:var(--now)}
+.nowline b{position:absolute;right:6px;top:-24px;font-family:var(--hand);font-weight:400;font-size:18px;color:var(--now);background:var(--surface);padding:0 4px;border-radius:4px}
+.hint{color:var(--ink-soft);font-size:14px;margin:8px 0}
+
+/* month grid */
+.mscroll{overflow-x:auto;-webkit-overflow-scrolling:touch;background:var(--surface);border:2px solid var(--ink);border-radius:6px}
+.mgrid{--mc:clamp(9px,calc((100vw - 110px) / 48),20px);display:grid;grid-template-columns:52px repeat(48,var(--mc));grid-auto-rows:26px;width:max-content}
+.mh{font-family:var(--hand);display:flex;align-items:center;justify-content:center;border-bottom:1px solid var(--grid-strong);background:var(--surface)}
+.mh.ampm{font-size:24px;border-bottom:1px solid var(--grid-strong)}
+.mh.pm,.mh.h12{border-left:2px solid var(--ink)}
+.mh.hr{font-size:16px;border-bottom:2px solid var(--ink);border-left:1px solid var(--grid)}
+.corner{position:sticky;left:0;z-index:2;border-right:2px solid var(--ink);border-bottom:2px solid var(--ink)}
+.mdate{position:sticky;left:0;z-index:1;border:0;border-right:2px solid var(--ink);border-bottom:1px solid var(--grid);background:var(--surface);display:flex;align-items:center;justify-content:space-between;padding:0 6px;font-family:var(--hand);font-size:18px}
+.mdate small{font-size:13px;color:var(--ink-soft)}
+.mdate.today{background:var(--today)}
+.mc{border-bottom:1px solid var(--grid);border-left:1px dotted var(--grid);user-select:none;-webkit-user-select:none}
+.mc.even{border-left:1px solid var(--grid-strong)}
+.mc.c24{border-left:2px solid var(--ink)}
+.mc.trow{background-color:var(--today)}
+.mc.trow.fill{background-color:var(--c)}
+.mc.nowc{box-shadow:inset 0 0 0 2px var(--now)}
+.mgrid.draw .mc{touch-action:none}
+.switch{display:inline-flex;align-items:center;gap:8px;min-height:44px;font-weight:700;font-size:15px}
+.switch input{width:22px;height:22px;accent-color:var(--accent)}
+
+footer{margin-top:18px;color:var(--ink-soft);font-size:14px}
+
+/* editor */
+dialog{border:2px solid var(--ink);border-radius:14px;background:var(--paper);color:var(--ink);padding:18px;width:min(460px,calc(100vw - 24px));max-height:calc(100vh - 60px)}
+dialog::backdrop{background:rgba(10,15,20,.45)}
+dialog h3{font-family:var(--hand);font-weight:400;font-size:30px;margin:0 0 4px}
+dialog p{margin:0 0 12px;color:var(--ink-soft);font-size:14px}
+.er{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+.er input[type=color]{width:48px;height:44px;border:2px solid var(--grid-strong);border-radius:10px;padding:2px;background:var(--surface);flex-shrink:0}
+.er input[type=text]{flex:1;min-width:0;height:44px;border:2px solid var(--grid-strong);border-radius:10px;padding:0 10px;background:var(--surface);font-size:16px}
+.er .del{height:44px;border:0;background:none;color:var(--now);font-weight:700;padding:0 6px}
+.dlg-actions{display:flex;justify-content:space-between;gap:8px;margin-top:14px}
+.primary{min-height:44px;padding:0 18px;border:0;border-radius:10px;background:var(--ink);color:var(--paper);font-weight:700}
+
+/* backup reminder */
+.remind{display:flex;align-items:center;gap:10px;border:2px solid;border-radius:10px;padding:8px 10px;margin-top:10px;color:#1E2932}
+.remind.soon{background:#FFF1B8;border-color:#C9A227}
+.remind.due{background:#FFE0E4;border-color:#E0435C}
+.remind .ico{font-size:22px;line-height:1;flex-shrink:0}
+.remind p{margin:0;flex:1;font-size:15px;line-height:1.3}
+.remind p b{display:block}
+.remind .go{min-height:40px;padding:0 12px;border:0;border-radius:8px;background:#1E2932;color:#fff;font-weight:700;flex-shrink:0}
+.remind .later{min-height:40px;border:0;background:none;color:#1E2932;text-decoration:underline;padding:0 4px;flex-shrink:0}
+.tab{position:relative}
+.tab .dot{position:absolute;top:4px;right:6px;width:11px;height:11px;border-radius:50%;background:var(--now);border:2px solid var(--surface)}
+.lastb{border:2px solid var(--grid-strong);border-radius:10px;padding:10px 12px;margin:0 0 12px;background:var(--surface)}
+.lastb b{display:block;font-size:17px}
+.lastb span{font-size:14px;color:var(--ink-soft)}
+/* app shell */
+html,body{overscroll-behavior:none}
+body{-webkit-touch-callout:none}
+.app{padding-bottom:calc(110px + env(safe-area-inset-bottom,0px))}
+.tabbar{margin-top:10px}
+.tabbar .in{display:flex;border:2px solid var(--ink);border-radius:12px;overflow:hidden;background:var(--surface)}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border:0;border-left:1px solid var(--grid-strong);background:none;padding:4px 2px;min-height:52px;font-size:12px;font-weight:700;color:var(--ink);-webkit-user-select:none;user-select:none}
+.tab:first-child{border-left:0}
+.tab svg{width:24px;height:24px;flex-shrink:0}
+.tab[aria-selected="true"]{background:var(--ink);color:var(--paper)}
+@media (min-width:700px){.tab{flex-direction:row;gap:8px;font-size:15px;min-height:48px}}
+.welcome{display:flex;gap:12px;align-items:flex-start;background:var(--surface);border:2px solid var(--ink);border-radius:12px;padding:12px 14px;margin:14px 0 0}
+.welcome p{margin:0;font-size:15px;flex:1}
+.welcome .acts{display:flex;gap:6px;flex-shrink:0;flex-direction:column}
+.steps{margin:0;padding:0;list-style:none;counter-reset:st}
+.steps li{counter-increment:st;display:flex;gap:12px;margin:0 0 12px;font-size:16px}
+.steps li::before{content:counter(st);flex:0 0 30px;height:30px;border-radius:50%;border:2px solid var(--ink);display:grid;place-items:center;font-family:var(--hand);font-size:19px}
+.devpick{display:flex;border:2px solid var(--ink);border-radius:10px;overflow:hidden;margin:0 0 14px}
+.devpick button{flex:1;border:0;background:var(--surface);min-height:44px;font-weight:700}
+.devpick button[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
+.note{font-size:14px;color:var(--ink-soft);margin:6px 0 0}
+kbd{font-family:inherit;font-weight:700;border:1.5px solid var(--grid-strong);border-radius:6px;padding:0 6px;background:var(--surface)}
+@media (prefers-reduced-motion: reduce){.pencil.on{transform:none}}
+@media (min-width:700px){:root{--row:30px}.timeline{grid-template-columns:96px 1fr}.nowline{left:90px}}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="sticky">
+    <div class="top">
+      <div class="clock" aria-live="off">
+        <div class="time" id="clockTime">--:--</div>
+        <div class="date" id="clockDate"></div>
+      </div>
+    </div>
+    <nav class="tabbar" aria-label="App">
+  <div class="in" role="tablist">
+    <button class="tab" role="tab" id="tabDay" aria-selected="true"><svg viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="18" height="20" rx="3"/><rect class="f" x="8" y="8" width="10" height="4" rx="1"/><path d="M8 16h10"/></svg>Day</button>
+    <button class="tab" role="tab" id="tabMonth" aria-selected="false"><svg viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="20" height="18" rx="3"/><path d="M3 10h20M9 10v12M15 10v12"/><rect class="f" x="16" y="12" width="5" height="4" fill="none" stroke="none"/></svg>Month</button>
+    <button class="tab" id="tabColors" aria-selected="false"><svg viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 21l3-1 12-12-2-2L6 18z"/><path d="M15 7l3 3"/></svg>Colors</button>
+    <button class="tab" id="tabBackup" aria-selected="false"><svg viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 9h16v13H5z"/><path d="M3 5h20v4H3z"/><path d="M10 14h6"/></svg>Backup<span class="dot" id="backupDot" hidden></span></button>
+    <button class="tab" id="tabInstall" aria-selected="false"><svg viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="2"><rect x="7" y="2" width="12" height="22" rx="3"/><path d="M13 7v8M10 12l3 3 3-3"/></svg>Install</button>
+  </div>
+</nav>
+    <div class="remind" id="remind" hidden role="status">
+      <span class="ico" aria-hidden="true" id="remindIco">💾</span>
+      <p id="remindText"></p>
+      <button class="go" id="remindGo">Save backup</button>
+      <button class="later" id="remindLater">Later</button>
+    </div>
+    <div class="palette-head">
+      <span id="palHint">Pick a color, then tap or drag down the hours</span>
+    </div>
+    <div class="palette" id="palette" role="radiogroup" aria-label="Activity colors"></div>
+  </div>
+
+  <div class="welcome" id="welcome" hidden>
+    <p>Put Time tracker on your Home Screen so it opens full screen with one tap, like any other app.</p>
+    <div class="acts"><button class="pill" id="welcomeShow">Show me how</button><button class="linkbtn" id="welcomeHide">Not now</button></div>
+  </div>
+
+  <section id="dayView">
+    <nav class="datenav" aria-label="Day">
+      <button class="icon" id="dPrev" aria-label="Previous day">‹</button>
+      <button class="icon" id="dNext" aria-label="Next day">›</button>
+      <h2 id="dTitle"></h2>
+      <button class="pill" id="dToday">Today</button>
+    </nav>
+    <div class="totals" id="totals"></div>
+    <div class="tl-wrap">
+      <div class="timeline" id="timeline" role="grid" aria-label="Half-hour slots"></div>
+      <div class="nowline" id="nowLine" hidden><b id="nowText"></b></div>
+    </div>
+    <p class="hint">Drag on the strip to color it. Scroll by dragging the times on the left. Tap a colored slot with the same color to clear it.</p>
+  </section>
+
+  <section id="monthView" hidden>
+    <nav class="datenav" aria-label="Month">
+      <button class="icon" id="mPrev" aria-label="Previous month">‹</button>
+      <button class="icon" id="mNext" aria-label="Next month">›</button>
+      <h2 id="mTitle"></h2>
+      <label class="switch"><input type="checkbox" id="drawToggle"> Draw here</label>
+    </nav>
+    <div class="mscroll" id="mscroll"><div class="mgrid" id="mgrid"></div></div>
+    <p class="hint" id="mHint">Tap a day to open it. Turn on "Draw here" to color straight onto the month page.</p>
+  </section>
+
+  <footer id="status">Saved on this device.</footer>
+</div>
+
+<dialog id="installDlg" aria-labelledby="installTitle">
+  <h3 id="installTitle">Add to Home Screen</h3>
+  <p>Do this once on each iPhone or iPad. Then open Time tracker from its icon.</p>
+  <div class="devpick" role="group" aria-label="Device">
+    <button id="pickPhone" aria-pressed="true">iPhone</button>
+    <button id="pickPad" aria-pressed="false">iPad</button>
+  </div>
+  <ol class="steps" id="stepList"></ol>
+  <p class="note">If you don't see the Share button, tap <kbd>•••</kbd> first.</p>
+  <p class="note">Each iPhone or iPad keeps its own chart. Opening the link in a Safari tab and opening the Home Screen icon count as two different places, so stick to the icon.</p>
+  <div class="dlg-actions"><span></span><button class="primary" id="installDone">Got it</button></div>
+</dialog>
+
+<dialog id="backupDlg" aria-labelledby="backupTitle">
+  <h3 id="backupTitle">Backup</h3>
+  <div class="lastb" id="lastBox"><b id="lastLine"></b><span id="lastHint"></span></div>
+  <p id="backupWhere">Your chart is kept on this device. Save a backup file now and then so you can bring it back if you change devices or clear Safari.</p>
+  <button class="primary" id="saveBackup">Save a backup file</button>
+  <p class="note">On iPhone and iPad, choose <b>Save to Files</b>, then iCloud Drive, so the backup is safe even if this device is lost.</p>
+  <div id="copyBox" hidden>
+    <p class="note" style="margin-top:12px">Saving a file didn't work on this device. Copy this backup text and paste it into Notes or an email to yourself instead.</p>
+    <textarea id="backupText" readonly rows="4" style="width:100%;font-size:13px;border:2px solid var(--grid-strong);border-radius:10px;padding:8px;background:var(--surface);color:var(--ink)"></textarea>
+    <button class="pill" id="copyBackup">Copy backup text</button>
+  </div>
+  <h3 style="font-size:24px;margin-top:20px">Restore a backup</h3>
+  <p>This replaces the chart and colors on this device with the ones in the backup.</p>
+  <label class="pill" style="display:inline-flex;align-items:center;cursor:pointer">Choose backup file<input type="file" id="restoreFile" accept=".json,.txt,application/json,text/plain" hidden></label>
+  <p class="note" style="margin-top:10px">Or paste backup text:</p>
+  <textarea id="restoreText" rows="3" style="width:100%;font-size:13px;border:2px solid var(--grid-strong);border-radius:10px;padding:8px;background:var(--surface);color:var(--ink)" placeholder="Paste backup text here"></textarea>
+  <button class="pill" id="restorePaste">Restore from text</button>
+  <p id="backupMsg" role="status" style="font-weight:700;margin:12px 0 0"></p>
+  <div class="dlg-actions"><span></span><button class="primary" id="backupDone">Done</button></div>
+</dialog>
+
+<dialog id="dlg" aria-labelledby="dlgTitle">
+  <h3 id="dlgTitle">Your colors</h3>
+  <p>Each color stands for something you do. Rename them or pick new shades.</p>
+  <div id="editor"></div>
+  <div class="dlg-actions">
+    <button class="pill" id="addAct">Add a color</button>
+    <button class="primary" id="doneEdit">Done</button>
+  </div>
+</dialog>
+
+<script>
+(function(){
+  var SLOTS = 48, LS = 'time-tracker-v1';
+  var DEFAULT_ACTS = [
+    {id:'sleep', name:'Sleep', color:'#5B8DD9'},
+    {id:'breakfast', name:'Breakfast', color:'#F2A33A'},
+    {id:'study', name:'Study', color:'#EC6FA8'},
+    {id:'lunch', name:'Lunch', color:'#A855C7'},
+    {id:'call', name:'Call', color:'#E0435C'},
+    {id:'rest', name:'Rest', color:'#33B1C2'},
+    {id:'park', name:'Park & errands', color:'#6B7076'},
+    {id:'shower', name:'Shower', color:'#2E6CCB'},
+    {id:'dinner', name:'Dinner', color:'#6E3FB0'}
+  ];
+  var EXTRA = ['#3FA868','#C9A227','#8B5A2B','#FF8A65','#26A69A','#D81B60','#7CB342'];
+  var MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  var WEEK = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
+  var state = null;
+  try { state = JSON.parse(localStorage.getItem(LS) || 'null'); } catch(e) {}
+  if (!state || !Array.isArray(state.activities)) state = { activities: DEFAULT_ACTS.map(function(a){ return Object.assign({}, a); }), months: {} };
+  if (!state.months) state.months = {};
+
+  var selected = state.activities.length ? state.activities[0].id : 'erase';
+  var view = 'day';
+  var cur = new Date(); cur.setHours(0,0,0,0);
+  var drawOn = false, painting = null, scrolledToNow = false;
+
+  var $ = function(id){ return document.getElementById(id); };
+  function pad(n){ return (n < 10 ? '0' : '') + n; }
+  function mkey(d){ return d.getFullYear() + '-' + pad(d.getMonth() + 1); }
+  function esc(s){ return String(s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+  function okColor(c){ return /^#[0-9a-f]{6}$/i.test(c) ? c : '#999999'; }
+  function textOn(hex){
+    var c = okColor(hex), r = parseInt(c.substr(1,2),16), g = parseInt(c.substr(3,2),16), b = parseInt(c.substr(5,2),16);
+    return (0.299*r + 0.587*g + 0.114*b) > 160 ? '#1E2932' : '#FFFFFF';
+  }
+  function hourLabel(h){ return h === 0 ? '12 AM' : h < 12 ? h + ' AM' : h === 12 ? '12 PM' : (h - 12) + ' PM'; }
+  function slotLabel(i){ var h = Math.floor(i/2), m = i % 2 ? '30' : '00'; return ((h % 12) || 12) + ':' + m + (h < 12 ? ' AM' : ' PM'); }
+  function sameDay(a, b){ return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate(); }
+  function actMap(){ var m = {}; state.activities.forEach(function(a){ m[a.id] = a; }); return m; }
+  function normalize(a){ var out = []; for (var i = 0; i < SLOTS; i++) out.push(a && typeof a[i] === 'string' ? a[i] : ''); return out; }
+  function getDay(d, create){
+    var k = mkey(d), m = state.months[k];
+    if (!m) { if (!create) return null; m = state.months[k] = { days: {} }; }
+    if (!m.days) m.days = {};
+    var a = m.days[d.getDate()];
+    if (!Array.isArray(a) || a.length !== SLOTS) {
+      if (!create) return a ? normalize(a) : null;
+      a = m.days[d.getDate()] = normalize(a);
+    }
+    return a;
+  }
+  function saveLocal(){ try { localStorage.setItem(LS, JSON.stringify(state)); } catch(e) {} }
+
+  /* backup reminder bookkeeping (this device only) */
+  var DAY = 86400000, meta = {};
+  try { meta = JSON.parse(localStorage.getItem(LS + '-meta') || '{}') || {}; } catch(e) {}
+  function saveMeta(){ try { localStorage.setItem(LS + '-meta', JSON.stringify(meta)); } catch(e) {} }
+  function hasData(){
+    return Object.keys(state.months).some(function(k){ var d = (state.months[k] || {}).days || {}; return Object.keys(d).some(function(x){ return Array.isArray(d[x]) && d[x].some(Boolean); }); });
+  }
+  function daysSince(t){ var a = new Date(t); a.setHours(0,0,0,0); var b = new Date(); b.setHours(0,0,0,0); return Math.round((b - a) / DAY); }
+  function ago(n){ return n <= 0 ? 'today' : n === 1 ? 'yesterday' : n + ' days ago'; }
+  var syncKnown = false;
+  function backupState(){
+    // returns {level:'none'|'soon'|'due', text}
+    if (remote.col || !hasData()) return { level: 'none' };
+    if (!meta.lastBackup) {
+      var since = meta.firstEntry ? daysSince(meta.firstEntry) : 0;
+      return { level: since >= 7 ? 'due' : 'soon', title: 'No backup yet', text: 'Your chart is only on this device. Save a backup so you don\'t lose it.' };
+    }
+    var n = daysSince(meta.lastBackup);
+    if (n >= 7) return { level: 'due', title: 'Backup is overdue', text: 'Last one was ' + ago(n) + '. Save one now so this week isn\'t lost.' };
+    if (n >= 5) return { level: 'soon', title: 'Backup due soon', text: 'Last one was ' + ago(n) + '. Save one before the week is up.' };
+    return { level: 'none' };
+  }
+  function updateReminder(){
+    if (!syncKnown) return;
+    var b = backupState(), box = $('remind');
+    var snoozed = meta.snoozeUntil && Date.now() < meta.snoozeUntil;
+    $('backupDot').hidden = b.level === 'none';
+    if (b.level === 'none' || snoozed) box.hidden = true;
+    else {
+      box.className = 'remind ' + b.level;
+      $('remindIco').textContent = b.level === 'due' ? '⚠️' : '💾';
+      $('remindText').innerHTML = '<b>' + b.title + '</b>' + b.text;
+      box.hidden = false;
+    }
+    if (!remote.col) {
+      setStatus('Saved on this device. ' + (meta.lastBackup ? 'Last backup: ' + ago(daysSince(meta.lastBackup)) + '.' : 'No backup saved yet.'));
+    }
+  }
+  function markBackedUp(){ meta.lastBackup = Date.now(); meta.snoozeUntil = 0; saveMeta(); updateReminder(); refreshLastBox(); }
+  function noteEntry(){ if (!meta.firstEntry && hasData()) { meta.firstEntry = Date.now(); saveMeta(); } updateReminder(); }
+  function refreshLastBox(){
+    if (!document.getElementById('lastLine')) return;
+    if (meta.lastBackup) {
+      var n = daysSince(meta.lastBackup), dt = new Date(meta.lastBackup);
+      $('lastLine').textContent = 'Last backup: ' + MONTHS[dt.getMonth()].slice(0,3) + ' ' + dt.getDate() + ' (' + ago(n) + ')';
+      $('lastHint').textContent = n >= 7 ? 'It\'s been a week or more. Save a new one now.' : 'Next one due ' + (7 - n === 1 ? 'tomorrow' : 'in ' + (7 - n) + ' days') + '.';
+    } else {
+      $('lastLine').textContent = 'No backup saved yet';
+      $('lastHint').textContent = 'Save one now, then once a week. This page will remind you.';
+    }
+  }
+
+  /* ---------- account sync (falls back to this device) ---------- */
+  var remote = { col: null, monthKey: null, unsubMonth: null, timers: {}, inflight: {}, dirty: {} };
+  function setStatus(t){ $('status').textContent = t; }
+  function queueSave(name){
+    if (!remote.col) return;
+    remote.dirty[name] = true;
+    clearTimeout(remote.timers[name]);
+    remote.timers[name] = setTimeout(function(){ flush(name); }, 700);
+  }
+  function flush(name){
+    if (remote.inflight[name]) return;
+    remote.inflight[name] = true; remote.dirty[name] = false;
+    var data;
+    if (name === 'activities') data = { list: state.activities };
+    else { var k = name.slice(2); data = { days: (state.months[k] && state.months[k].days) || {} }; }
+    remote.col.doc(name).set(data).then(function(){
+      setStatus('Saved to your account. It shows up on your iPhone and iPad.');
+    }).catch(function(){
+      setStatus('Saved on this device. Syncing to your account failed; it will try again on your next change.');
+    }).then(function(){
+      remote.inflight[name] = false;
+      if (remote.dirty[name]) flush(name);
+    });
+  }
+  function busy(name){ return painting || remote.dirty[name] || remote.inflight[name]; }
+  function watchMonth(){
+    if (!remote.col) return;
+    var k = mkey(cur);
+    if (remote.monthKey === k) return;
+    if (remote.unsubMonth) remote.unsubMonth();
+    remote.monthKey = k;
+    var name = 'm-' + k;
+    remote.unsubMonth = remote.col.doc(name).onSnapshot(function(s){
+      if (s.metadata && s.metadata.hasPendingWrites) return;
+      if (busy(name)) return;
+      if (s.exists) {
+        var d = s.data() || {};
+        state.months[k] = { days: d.days || {} };
+        saveLocal(); render();
+      } else if (state.months[k] && Object.keys(state.months[k].days || {}).length) {
+        queueSave(name);
+      }
+    }, function(){});
+  }
+  function connect(){
+    var settle = function(){ syncKnown = true; noteEntry(); };
+    if (!window.claude || typeof window.claude.use !== 'function') { settle(); return; }
+    Promise.all([window.claude.use('db'), window.claude.use('user')]).then(function(r){
+      var db = r[0], user = r[1];
+      if (!db || !user) return null;
+      return user.id().then(function(id){
+        if (!id) return;
+        remote.col = db.collection('data/users/' + id);
+        setStatus('Saved to your account. It shows up on your iPhone and iPad.');
+        remote.col.doc('activities').onSnapshot(function(s){
+          if (s.metadata && s.metadata.hasPendingWrites) return;
+          if (busy('activities')) return;
+          var d = s.exists ? s.data() : null;
+          if (d && Array.isArray(d.list) && d.list.length) {
+            state.activities = d.list.filter(function(a){ return a && a.id; });
+            if (selected !== 'erase' && !actMap()[selected]) selected = state.activities[0] ? state.activities[0].id : 'erase';
+            saveLocal(); renderPalette(); render();
+          } else if (!s.exists) queueSave('activities');
+        }, function(){});
+        watchMonth();
+      });
+    }).catch(function(){}).then(settle);
+  }
+
+  /* ---------- clock ---------- */
+  function tick(){
+    var n = new Date(), h = n.getHours();
+    $('clockTime').textContent = ((h % 12) || 12) + ':' + pad(n.getMinutes()) + (h < 12 ? ' AM' : ' PM');
+    $('clockDate').textContent = WEEK[n.getDay()] + ', ' + MONTHS[n.getMonth()] + ' ' + n.getDate();
+    placeNow(); updateReminder();
+    var slot = h * 2 + (n.getMinutes() >= 30 ? 1 : 0);
+    if (view === 'month' && tick.slot !== undefined && tick.slot !== slot && !painting) renderMonth();
+    tick.slot = slot;
+  }
+  function placeNow(){
+    var line = $('nowLine'), n = new Date();
+    if (view !== 'day' || !sameDay(n, cur)) { line.hidden = true; return; }
+    var row = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--row')) || 36;
+    var mins = n.getHours() * 60 + n.getMinutes();
+    line.style.top = (mins / 30 * row) + 'px';
+    $('nowText').textContent = 'now ' + $('clockTime').textContent;
+    line.hidden = false;
+  }
+
+  /* ---------- palette ---------- */
+  function renderPalette(){
+    var h = state.activities.map(function(a){
+      var on = selected === a.id;
+      return '<button class="pencil' + (on ? ' on' : '') + '" role="radio" aria-checked="' + on + '" data-id="' + esc(a.id) + '" style="--c:' + okColor(a.color) + '"><span class="tip"></span>' + esc(a.name) + '</button>';
+    }).join('');
+    h += '<button class="pencil eraser' + (selected === 'erase' ? ' on' : '') + '" role="radio" aria-checked="' + (selected === 'erase') + '" data-id="erase"><span class="tip"></span>Eraser</button>';
+    $('palette').innerHTML = h;
+  }
+  $('palette').addEventListener('click', function(e){
+    var b = e.target.closest('.pencil'); if (!b) return;
+    selected = b.getAttribute('data-id'); renderPalette();
+  });
+
+  /* ---------- day view ---------- */
+  function renderDay(){
+    var acts = actMap(), arr = getDay(cur, false) || normalize(null), h = '';
+    $('dTitle').textContent = WEEK[cur.getDay()] + ', ' + MONTHS[cur.getMonth()].slice(0,3) + ' ' + cur.getDate();
+    for (var i = 0; i < SLOTS; i++) {
+      if (i % 2 === 0) h += '<div class="tl-label' + (i === 0 ? ' first' : '') + (i === 24 ? ' noon' : '') + '" style="grid-row:' + (i + 1) + '/span 2">' + hourLabel(i / 2) + '</div>';
+      var id = arr[i], a = id ? acts[id] : null, start = id && (i === 0 || arr[i - 1] !== id);
+      var cls = 'slot ' + (i % 2 ? 'half' : 'hour') + (i === 0 ? ' s0' : '') + (id ? ' fill' : '') + (id && !start ? ' cont' : '');
+      var st = 'grid-row:' + (i + 1) + ';' + (id ? '--c:' + okColor(a ? a.color : '#999999') + ';--t:' + textOn(a ? a.color : '#999999') : '');
+      h += '<div class="' + cls + '" data-i="' + i + '" data-d="' + cur.getDate() + '" style="' + st + '" role="gridcell" aria-label="' + slotLabel(i) + ', ' + (a ? esc(a.name) : 'empty') + '">' + (start ? '<span>' + esc(a ? a.name : 'Removed color') + '</span>' : '') + '</div>';
+    }
+    $('timeline').innerHTML = h;
+
+    var counts = {}, order = [];
+    arr.forEach(function(id){ if (!id) return; if (!counts[id]) { counts[id] = 0; order.push(id); } counts[id]++; });
+    order.sort(function(x, y){ return counts[y] - counts[x]; });
+    $('totals').innerHTML = order.length ? order.map(function(id){
+      var a = acts[id], m = counts[id] * 30, t = (m >= 60 ? Math.floor(m / 60) + 'h' : '') + (m % 60 ? (m >= 60 ? ' ' : '') + '30m' : '');
+      return '<span class="tot" style="--c:' + okColor(a ? a.color : '#999999') + '"><i></i>' + esc(a ? a.name : 'Removed color') + ' <b>' + t + '</b></span>';
+    }).join('') : '<span class="empty">Nothing colored in yet for this day.</span>';
+
+    placeNow();
+    if (!scrolledToNow && sameDay(new Date(), cur)) {
+      scrolledToNow = true;
+      requestAnimationFrame(function(){
+        var line = $('nowLine');
+        if (!line.hidden) window.scrollTo({ top: Math.max(0, line.getBoundingClientRect().top + window.scrollY - window.innerHeight / 2) });
+      });
+    }
+  }
+
+  /* ---------- month view ---------- */
+  function renderMonth(){
+    var y = cur.getFullYear(), m = cur.getMonth(), days = new Date(y, m + 1, 0).getDate();
+    var acts = actMap(), now = new Date(), nowSlot = now.getHours() * 2 + (now.getMinutes() >= 30 ? 1 : 0), h = '';
+    $('mTitle').textContent = MONTHS[m] + ' ' + y;
+    h += '<div class="mh corner" style="grid-row:1/span 2;grid-column:1"></div>';
+    h += '<div class="mh ampm" style="grid-row:1;grid-column:2/span 24">AM</div>';
+    h += '<div class="mh ampm pm" style="grid-row:1;grid-column:26/span 24">PM</div>';
+    for (var hr = 0; hr < 24; hr++) h += '<div class="mh hr' + (hr === 12 ? ' h12' : '') + '" style="grid-row:2;grid-column:' + (2 + hr * 2) + '/span 2">' + ((hr % 12) || 12) + '</div>';
+    for (var d = 1; d <= days; d++) {
+      var row = d + 2, date = new Date(y, m, d), arr = getDay(date, false), today = sameDay(date, now);
+      h += '<button class="mdate' + (today ? ' today' : '') + '" data-open="' + d + '" style="grid-row:' + row + ';grid-column:1" aria-label="Open ' + WEEK[date.getDay()] + ' ' + MONTHS[m] + ' ' + d + '"><b>' + d + '</b><small>' + WEEK[date.getDay()].charAt(0) + '</small></button>';
+      for (var i = 0; i < SLOTS; i++) {
+        var id = arr ? arr[i] : '', a = id ? acts[id] : null;
+        var cls = 'mc ' + (i % 2 ? 'odd' : 'even') + (i === 24 ? ' c24' : '') + (id ? ' fill' : '') + (today ? ' trow' : '') + (today && i === nowSlot ? ' nowc' : '');
+        h += '<div class="' + cls + '" data-d="' + d + '" data-i="' + i + '" style="grid-row:' + row + ';grid-column:' + (i + 2) + (id ? ';--c:' + okColor(a ? a.color : '#999999') : '') + '"></div>';
+      }
+    }
+    var g = $('mgrid'); g.innerHTML = h; g.classList.toggle('draw', drawOn);
+  }
+
+  function render(){ if (view === 'day') renderDay(); else renderMonth(); }
+
+  /* ---------- painting ---------- */
+  function paintEl(el, id){
+    var a = actMap()[id];
+    el.classList.toggle('fill', !!id);
+    if (id) el.style.setProperty('--c', okColor(a ? a.color : '#999999')); else el.style.removeProperty('--c');
+    if (el.classList.contains('slot')) { el.classList.remove('cont'); el.innerHTML = ''; }
+  }
+  function cellAt(x, y){ var el = document.elementFromPoint(x, y); return el ? el.closest('.slot,.mc') : null; }
+  function onDown(e){
+    var c = e.target.closest('.slot,.mc'); if (!c) return;
+    if (c.classList.contains('mc') && !drawOn) return;
+    if (e.button > 0) return;
+    e.preventDefault();
+    var d = +c.getAttribute('data-d'), i = +c.getAttribute('data-i');
+    var date = new Date(cur.getFullYear(), cur.getMonth(), d), arr = getDay(date, true);
+    var val = selected === 'erase' ? '' : selected;
+    painting = { root: c.parentNode, date: date, arr: arr, val: val, orig: arr[i], first: i, last: i, d: d, moved: false };
+    arr[i] = val; paintEl(c, val);
+  }
+  function onMove(e){
+    if (!painting) return;
+    e.preventDefault();
+    var c = cellAt(e.clientX, e.clientY);
+    if (!c || +c.getAttribute('data-d') !== painting.d) return;
+    var i = +c.getAttribute('data-i'); if (i === painting.last) return;
+    painting.moved = true;
+    var lo = Math.min(i, painting.last), hi = Math.max(i, painting.last);
+    for (var k = lo; k <= hi; k++) {
+      painting.arr[k] = painting.val;
+      var el = painting.root.querySelector('[data-d="' + painting.d + '"][data-i="' + k + '"]');
+      if (el) paintEl(el, painting.val);
+    }
+    painting.last = i;
+  }
+  function onUp(){
+    if (!painting) return;
+    var p = painting; painting = null;
+    if (!p.moved && p.val && p.orig === p.val) p.arr[p.first] = '';
+    if (p.arr.every(function(x){ return !x; })) { var mm = state.months[mkey(p.date)]; if (mm) delete mm.days[p.date.getDate()]; }
+    saveLocal(); queueSave('m-' + mkey(p.date)); render(); noteEntry();
+  }
+  ['timeline','mgrid'].forEach(function(id){ $(id).addEventListener('pointerdown', onDown); });
+  window.addEventListener('pointermove', onMove, { passive: false });
+  window.addEventListener('pointerup', onUp);
+  window.addEventListener('pointercancel', onUp);
+
+  $('mgrid').addEventListener('click', function(e){
+    var b = e.target.closest('[data-open]');
+    var c = !drawOn && e.target.closest('.mc');
+    var d = b ? +b.getAttribute('data-open') : c ? +c.getAttribute('data-d') : 0;
+    if (!d) return;
+    cur = new Date(cur.getFullYear(), cur.getMonth(), d);
+    scrolledToNow = false; setView('day'); window.scrollTo({ top: 0 });
+  });
+
+  /* ---------- navigation ---------- */
+  function setView(v){
+    view = v;
+    $('tabDay').setAttribute('aria-selected', v === 'day');
+    $('tabMonth').setAttribute('aria-selected', v === 'month');
+    $('dayView').hidden = v !== 'day';
+    $('monthView').hidden = v !== 'month';
+    $('palHint').textContent = v === 'day' ? 'Pick a color, then tap or drag down the hours' : 'Pick a color, then turn on "Draw here" to color the page';
+    watchMonth(); render();
+  }
+  function moveDay(n){ cur = new Date(cur.getFullYear(), cur.getMonth(), cur.getDate() + n); watchMonth(); render(); }
+  function moveMonth(n){ cur = new Date(cur.getFullYear(), cur.getMonth() + n, 1); watchMonth(); render(); }
+  $('tabDay').onclick = function(){ setView('day'); };
+  $('tabMonth').onclick = function(){ setView('month'); };
+  $('tabColors').onclick = function(){ openEditor(); };
+  $('tabInstall').onclick = function(){ openInstall(); };
+  $('tabBackup').onclick = function(){ openBackup(); };
+
+  /* backup and restore */
+  var bdlg = $('backupDlg');
+  function backupJSON(){ return JSON.stringify({ app: 'time-tracker', version: 1, savedAt: new Date().toISOString(), activities: state.activities, months: state.months }); }
+  function bmsg(t){ $('backupMsg').textContent = t; }
+  function openBackup(){
+    bmsg(''); $('copyBox').hidden = true; $('restoreText').value = '';
+    refreshLastBox(); $('lastBox').hidden = !!remote.col;
+    $('backupWhere').textContent = remote.col
+      ? 'Your chart is saved to your Claude account. You can still save a backup file to keep your own copy.'
+      : 'Your chart is kept on this device. Save a backup file now and then so you can bring it back if you change devices or clear Safari.';
+    if (bdlg.showModal) bdlg.showModal(); else bdlg.setAttribute('open', '');
+  }
+  function showCopy(){ $('backupText').value = backupJSON(); $('copyBox').hidden = false; }
+  $('saveBackup').onclick = function(){
+    var n = new Date(), name = 'time-tracker-backup-' + n.getFullYear() + '-' + pad(n.getMonth() + 1) + '-' + pad(n.getDate()) + '.json';
+    var json = backupJSON(), file = null;
+    function saved(){ bmsg('Backup saved as ' + name + '. Next one is due in 7 days.'); markBackedUp(); }
+    function download(){
+      try {
+        var url = URL.createObjectURL(new Blob([json], { type: 'application/json' }));
+        var a = document.createElement('a'); a.href = url; a.download = name;
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(function(){ URL.revokeObjectURL(url); }, 5000);
+        saved();
+      } catch(e) { showCopy(); }
+    }
+    try { file = new File([json], name, { type: 'application/json' }); } catch(e) {}
+    if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
+      navigator.share({ files: [file], title: 'Time tracker backup' }).then(saved).catch(function(e){
+        if (e && e.name === 'AbortError') bmsg('Backup not saved. Tap Save a backup file and choose Save to Files.');
+        else download();
+      });
+    } else download();
+  };
+  $('copyBackup').onclick = function(){
+    var t = $('backupText'); t.focus(); t.select(); t.setSelectionRange(0, t.value.length);
+    var done = function(){ bmsg('Backup text copied. Paste it into Notes to keep it. Next one is due in 7 days.'); markBackedUp(); };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t.value).then(done).catch(function(){ try { document.execCommand('copy'); done(); } catch(e) { bmsg('Select the text and copy it by hand.'); } });
+    else { try { document.execCommand('copy'); done(); } catch(e) { bmsg('Select the text and copy it by hand.'); } }
+  };
+  function restoreFrom(text){
+    var d;
+    try { d = JSON.parse(String(text).trim()); } catch(e) { bmsg('That isn\'t a Time tracker backup. Check that you picked the right file or pasted all of the text.'); return; }
+    if (!d || d.app !== 'time-tracker' || !Array.isArray(d.activities) || typeof d.months !== 'object') { bmsg('That isn\'t a Time tracker backup. Check that you picked the right file or pasted all of the text.'); return; }
+    state.activities = d.activities.filter(function(a){ return a && a.id; });
+    state.months = d.months || {};
+    selected = state.activities[0] ? state.activities[0].id : 'erase';
+    saveLocal();
+    if (remote.col) { queueSave('activities'); Object.keys(state.months).forEach(function(k){ queueSave('m-' + k); }); }
+    renderPalette(); render();
+    var days = 0; Object.keys(state.months).forEach(function(k){ days += Object.keys((state.months[k] || {}).days || {}).length; });
+    markBackedUp();
+    bmsg('Restored ' + days + (days === 1 ? ' day' : ' days') + ' and ' + state.activities.length + ' colors.');
+  }
+  $('restoreFile').onchange = function(e){
+    var f = e.target.files && e.target.files[0]; if (!f) return;
+    var r = new FileReader(); r.onload = function(){ restoreFrom(r.result); e.target.value = ''; }; r.onerror = function(){ bmsg('That file couldn\'t be read. Try choosing it again.'); };
+    r.readAsText(f);
+  };
+  $('restorePaste').onclick = function(){ if (!$('restoreText').value.trim()) { bmsg('Paste your backup text into the box first.'); return; } restoreFrom($('restoreText').value); };
+  $('remindGo').onclick = function(){ openBackup(); };
+  $('remindLater').onclick = function(){ var t = new Date(); t.setHours(24,0,0,0); meta.snoozeUntil = t.getTime(); saveMeta(); updateReminder(); };
+  $('backupDone').onclick = function(){ if (bdlg.close) bdlg.close(); else bdlg.removeAttribute('open'); };
+
+  /* install help */
+  var STEPS = {
+    phone: [
+      'Open the link you were sent in <b>Safari</b> on your iPhone. You don\'t need a Claude account.',
+      'Tap the <b>Share</b> button (the square with an arrow) at the bottom of the screen.',
+      'Scroll down and tap <b>Add to Home Screen</b>.',
+      'Name it <b>Time tracker</b>, keep <b>Open as Web App</b> on if you see it, and tap <b>Add</b>.',
+      'Always open Time tracker from that icon. Your chart is kept on this iPhone, so save a backup now and then from the <b>Backup</b> tab.'
+    ],
+    pad: [
+      'Open the link you were sent in <b>Safari</b> on your iPad. You don\'t need a Claude account.',
+      'Tap the <b>Share</b> button (the square with an arrow) at the top right, next to the address bar.',
+      'Tap <b>Add to Home Screen</b>.',
+      'Name it <b>Time tracker</b>, keep <b>Open as Web App</b> on if you see it, and tap <b>Add</b>.',
+      'Always open it from that icon. Your chart is kept on this iPad, so save a backup now and then from the <b>Backup</b> tab. Turn the iPad sideways for the widest month page.'
+    ]
+  };
+  var isPad = /iPad/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  function showSteps(dev){
+    $('pickPhone').setAttribute('aria-pressed', dev === 'phone');
+    $('pickPad').setAttribute('aria-pressed', dev === 'pad');
+    $('stepList').innerHTML = STEPS[dev].map(function(t){ return '<li><span>' + t + '</span></li>'; }).join('');
+  }
+  $('pickPhone').onclick = function(){ showSteps('phone'); };
+  $('pickPad').onclick = function(){ showSteps('pad'); };
+  var idlg = $('installDlg');
+  function openInstall(){ showSteps(isPad ? 'pad' : 'phone'); if (idlg.showModal) idlg.showModal(); else idlg.setAttribute('open', ''); }
+  $('installDone').onclick = function(){ if (idlg.close) idlg.close(); else idlg.removeAttribute('open'); };
+  function hideWelcome(){ $('welcome').hidden = true; try { localStorage.setItem(LS + '-welcomed', '1'); } catch(e) {} }
+  var standalone = false;
+  try { standalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches; } catch(e) {}
+  var welcomed = false; try { welcomed = !!localStorage.getItem(LS + '-welcomed'); } catch(e) {}
+  if (!standalone && !welcomed) $('welcome').hidden = false;
+  $('welcomeShow').onclick = function(){ hideWelcome(); openInstall(); };
+  $('welcomeHide').onclick = hideWelcome;
+  $('dPrev').onclick = function(){ moveDay(-1); };
+  $('dNext').onclick = function(){ moveDay(1); };
+  $('dToday').onclick = function(){ cur = new Date(); cur.setHours(0,0,0,0); scrolledToNow = false; watchMonth(); render(); };
+  $('mPrev').onclick = function(){ moveMonth(-1); };
+  $('mNext').onclick = function(){ moveMonth(1); };
+  $('drawToggle').onchange = function(e){ drawOn = e.target.checked; $('mgrid').classList.toggle('draw', drawOn); };
+
+  /* ---------- color editor ---------- */
+  var dlg = $('dlg');
+  function renderEditor(){
+    $('editor').innerHTML = state.activities.map(function(a){
+      return '<div class="er" data-id="' + esc(a.id) + '"><input type="color" value="' + okColor(a.color) + '" aria-label="Color for ' + esc(a.name) + '"><input type="text" maxlength="24" value="' + esc(a.name) + '" aria-label="Name"><button class="del" aria-label="Remove ' + esc(a.name) + '">Remove</button></div>';
+    }).join('');
+  }
+  function findAct(el){ var r = el.closest('.er'); var id = r && r.getAttribute('data-id'); return actMap()[id]; }
+  $('editor').addEventListener('input', function(e){
+    var a = findAct(e.target); if (!a) return;
+    if (e.target.type === 'color') a.color = e.target.value; else a.name = e.target.value.trim() || 'Untitled';
+  });
+  $('editor').addEventListener('click', function(e){
+    if (!e.target.classList.contains('del')) return;
+    var a = findAct(e.target); if (!a) return;
+    state.activities = state.activities.filter(function(x){ return x !== a; });
+    if (selected === a.id) selected = state.activities[0] ? state.activities[0].id : 'erase';
+    renderEditor();
+  });
+  $('addAct').onclick = function(){
+    var used = state.activities.map(function(a){ return a.color.toLowerCase(); });
+    var color = EXTRA.filter(function(c){ return used.indexOf(c.toLowerCase()) < 0; })[0] || '#888888';
+    state.activities.push({ id: 'a' + Date.now().toString(36), name: 'New activity', color: color });
+    renderEditor();
+    var inputs = $('editor').querySelectorAll('input[type=text]');
+    var last = inputs[inputs.length - 1]; if (last) { last.focus(); last.select(); }
+  };
+  function closeEditor(){
+    if (dlg.open) { if (dlg.close) dlg.close(); else dlg.removeAttribute('open'); }
+  }
+  $('doneEdit').onclick = closeEditor;
+  dlg.addEventListener('close', function(){ saveLocal(); queueSave('activities'); renderPalette(); render(); });
+  function openEditor(){ renderEditor(); if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', ''); }
+
+  /* ---------- start ---------- */
+  renderPalette(); tick(); render();
+  setInterval(tick, 15000);
+  document.addEventListener('visibilitychange', function(){ if (!document.hidden) tick(); });
+  connect();
+  if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+    window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); });
+  }
+})();
+</script>
+</body>
+</html>
