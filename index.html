@@ -238,7 +238,11 @@ dialog{max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);overflow:aut
 
 /* daily reminder */
 .rem-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;margin:0 0 6px}
-.rem-row input[type=time]{width:auto;min-width:130px;height:44px;border:2px solid var(--grid-strong);border-radius:10px;padding:0 10px;background:var(--surface);font-size:17px;color:var(--ink)}
+.rem-row input[type=time],.rem-row input[type=number],.rem-row select{width:auto;min-width:130px;height:44px;border:2px solid var(--grid-strong);border-radius:10px;padding:0 10px;background:var(--surface);font-size:17px;color:var(--ink)}
+.rem-row input[type=number]{min-width:0;width:84px}
+.rem-row select{min-width:0}
+.rep-opts{padding-left:30px;gap:8px 10px}
+@media (max-width:420px){.rep-opts{padding-left:0}}
 dialog h4{font-size:17px;margin:18px 0 4px}
 .okmsg{font-weight:700;margin:10px 0 0;min-height:1em}
 .remind.nudge{background:#E3EEFF;border-color:#2E6CCB}
@@ -357,6 +361,14 @@ dialog h4{font-size:17px;margin:18px 0 4px}
   <div class="rem-row">
     <label class="switch"><input type="checkbox" id="remOn"> Remind me every day</label>
     <label class="switch">at <input type="time" id="remTime" value="21:00"></label>
+  </div>
+  <div class="rem-row">
+    <label class="switch"><input type="checkbox" id="remRep"> Keep reminding me until I fill it in</label>
+  </div>
+  <div class="rem-row rep-opts" id="repOpts" hidden>
+    <label class="switch">every <input type="number" id="remEvery" min="1" step="any" inputmode="decimal" value="30" aria-label="How often"></label>
+    <select id="remUnit" aria-label="Minutes or hours"><option value="min">minutes</option><option value="hr">hours</option></select>
+    <label class="switch">until <input type="time" id="remUntil" value="23:00"></label>
   </div>
   <p class="note" id="remStatus"></p>
   <h4>Never miss it</h4>
@@ -855,19 +867,44 @@ dialog h4{font-size:17px;margin:18px 0 4px}
   function openEditor(){ renderEditor(); if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', ''); }
 
   /* ---------- daily reminder ---------- */
-  var rem = { on: false, time: '21:00' };
-  try { var r0 = JSON.parse(localStorage.getItem(LS + '-reminder') || 'null'); if (r0) { rem.on = !!r0.on; if (/^\d\d:\d\d$/.test(r0.time)) rem.time = r0.time; } } catch(e) {}
+  var rem = { on: false, time: '21:00', repeat: false, every: 30, unit: 'min', until: '23:00' };
+  try {
+    var r0 = JSON.parse(localStorage.getItem(LS + '-reminder') || 'null');
+    if (r0) {
+      rem.on = !!r0.on; rem.repeat = !!r0.repeat;
+      if (/^\d\d:\d\d$/.test(r0.time)) rem.time = r0.time;
+      if (/^\d\d:\d\d$/.test(r0.until)) rem.until = r0.until;
+      if (+r0.every > 0) rem.every = +r0.every;
+      if (r0.unit === 'hr') rem.unit = 'hr';
+    }
+  } catch(e) {}
   var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || isPad;
   var canNotify = 'Notification' in window;
   function dkey(d){ return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
   function todayFilled(){ var a = getDay(new Date(), false); return !!(a && a.some(Boolean)); }
-  function remTimeToday(){ var p = rem.time.split(':'), t = new Date(); t.setHours(+p[0], +p[1], 0, 0); return t; }
-  function remLabel(){ var p = rem.time.split(':'), h = +p[0]; return ((h % 12) || 12) + ':' + p[1] + (h < 12 ? ' AM' : ' PM'); }
+  function atToday(hhmm){ var p = hhmm.split(':'), t = new Date(); t.setHours(+p[0], +p[1], 0, 0); return t; }
+  function remTimeToday(){ return atToday(rem.time); }
+  function hm(hhmm){ var p = hhmm.split(':'), h = +p[0]; return ((h % 12) || 12) + ':' + p[1] + (h < 12 ? ' AM' : ' PM'); }
+  function remLabel(){ return hm(rem.time); }
+  function intervalMs(){ return Math.max(1, rem.every * (rem.unit === 'hr' ? 60 : 1)) * 60000; }
+  function everyLabel(){ var n = +rem.every; return (n === 1 ? '' : n + ' ') + (rem.unit === 'hr' ? (n === 1 ? 'hour' : 'hours') : (n === 1 ? 'minute' : 'minutes')); }
+  // Last repeat of the day: the "until" time if it's after the start, otherwise the end of the day.
+  function remEnd(){ var s = remTimeToday(), u = atToday(rem.until); if (u > s) return u.getTime(); s.setHours(23, 59, 59, 999); return s.getTime(); }
+  // The reminder slot we're in right now (start time, then every interval until the end). 0 = none yet today.
+  function currentSlot(now){
+    if (!rem.on) return 0;
+    var s = remTimeToday().getTime();
+    if (now < s) return 0;
+    if (!rem.repeat) return s;
+    var iv = intervalMs();
+    return s + Math.floor((Math.min(now, remEnd()) - s) / iv) * iv;
+  }
   function saveRem(){ try { localStorage.setItem(LS + '-reminder', JSON.stringify(rem)); } catch(e) {} syncRemToSW(); }
   // The service worker can't read localStorage, so it gets a copy of the settings in its own cache.
   function syncRemToSW(){
     if (!('caches' in window)) return;
-    var data = { on: rem.on, time: rem.time, filled: todayFilled() ? dkey(new Date()) : '', notified: meta.lastRemind || '' };
+    var data = { on: rem.on, time: rem.time, repeat: rem.repeat, every: rem.every, unit: rem.unit, until: rem.until,
+      filled: todayFilled() ? dkey(new Date()) : '', notifiedAt: meta.lastRemindAt || 0 };
     caches.open('tt-reminder').then(function(c){ return c.put('reminder.json', new Response(JSON.stringify(data), { headers: { 'Content-Type': 'application/json' } })); }).catch(function(){});
   }
   function showNote(title, body){
@@ -879,12 +916,12 @@ dialog h4{font-size:17px;margin:18px 0 4px}
     plain(); return Promise.resolve();
   }
   function checkReminder(){
-    var due = rem.on && !todayFilled() && Date.now() >= remTimeToday().getTime();
-    var today = dkey(new Date());
-    $('nudge').hidden = !due || meta.nudgeHidden === today;
-    if (due && meta.lastRemind !== today && document.hidden && canNotify && Notification.permission === 'granted') {
-      meta.lastRemind = today; saveMeta(); syncRemToSW();
-      showNote('Time tracker', 'You haven\'t colored in today yet. Take a minute to fill in your day.');
+    var slot = currentSlot(Date.now()), due = slot > 0 && !todayFilled();
+    $('nudge').hidden = !due || (meta.nudgeHiddenAt || 0) >= slot;
+    if (due && (meta.lastRemindAt || 0) < slot && document.hidden && canNotify && Notification.permission === 'granted') {
+      var again = (meta.lastRemindAt || 0) >= remTimeToday().getTime();
+      meta.lastRemindAt = Date.now(); saveMeta(); syncRemToSW();
+      showNote('Time tracker', again ? 'Still not filled in today. Take a minute to color in your day.' : 'You haven\'t colored in today yet. Take a minute to fill in your day.');
     }
     if (checkReminder.filled !== todayFilled()) { checkReminder.filled = todayFilled(); syncRemToSW(); }
   }
@@ -905,7 +942,7 @@ dialog h4{font-size:17px;margin:18px 0 4px}
       ? 'On iPhone and iPad, notifications only work once Time tracker is on your Home Screen (see Install). Until then you\'ll see a reminder at the top of the app after ' + remLabel() + '.'
       : 'This browser can\'t show notifications, so you\'ll see a reminder at the top of the app after ' + remLabel() + '.';
     else if (Notification.permission === 'denied') t = 'Notifications are blocked for this app. Allow them in your device or browser settings, or use the calendar reminder below. You\'ll still see a reminder at the top of the app.';
-    else if (Notification.permission === 'granted') t = 'On. You\'ll get a reminder at ' + remLabel() + ' on days you haven\'t filled in.';
+    else if (Notification.permission === 'granted') t = 'On. You\'ll get a reminder at ' + remLabel() + (rem.repeat ? ', then every ' + everyLabel() + ' until ' + (remEnd() === atToday(rem.until).getTime() ? hm(rem.until) : 'midnight') + ' or until you fill in the day' : ' on days you haven\'t filled in') + '.';
     else t = 'Allow notifications when asked so the reminder can reach you.';
     $('remStatus').textContent = t;
     $('remBtn').classList.toggle('on', rem.on);
@@ -918,6 +955,8 @@ dialog h4{font-size:17px;margin:18px 0 4px}
   var rdlg = $('remDlg');
   function openRem(){
     $('remOn').checked = rem.on; $('remTime').value = rem.time; $('remMsg').textContent = '';
+    $('remRep').checked = rem.repeat; $('remEvery').value = rem.every; $('remUnit').value = rem.unit; $('remUntil').value = rem.until;
+    $('repOpts').hidden = !rem.repeat;
     remStatus(); if (rdlg.showModal) rdlg.showModal(); else rdlg.setAttribute('open', '');
   }
   $('remBtn').onclick = openRem;
@@ -926,6 +965,15 @@ dialog h4{font-size:17px;margin:18px 0 4px}
     if (rem.on) askPermission().then(function(){ setBackgroundCheck(true); }); else remStatus();
   };
   $('remTime').onchange = function(e){ if (/^\d\d:\d\d$/.test(e.target.value)) { rem.time = e.target.value; saveRem(); remStatus(); checkReminder(); } };
+  $('remRep').onchange = function(e){ rem.repeat = e.target.checked; $('repOpts').hidden = !rem.repeat; saveRem(); remStatus(); checkReminder(); };
+  $('remEvery').onchange = function(e){
+    var n = Math.round(parseFloat(e.target.value) * 100) / 100;
+    if (!(n > 0)) { e.target.value = rem.every; return; }
+    if (rem.unit === 'min' && n < 1) n = 1;
+    rem.every = n; e.target.value = n; saveRem(); remStatus(); checkReminder();
+  };
+  $('remUnit').onchange = function(e){ rem.unit = e.target.value === 'hr' ? 'hr' : 'min'; $('remEvery').onchange({ target: $('remEvery') }); };
+  $('remUntil').onchange = function(e){ if (/^\d\d:\d\d$/.test(e.target.value)) { rem.until = e.target.value; saveRem(); remStatus(); checkReminder(); } };
   $('remTest').onclick = function(){
     if (!canNotify) { $('remMsg').textContent = 'Notifications aren\'t available here. Try the calendar reminder instead.'; return; }
     askPermission().then(function(){
@@ -936,15 +984,20 @@ dialog h4{font-size:17px;margin:18px 0 4px}
   };
   function icsTime(d){ return d.getFullYear() + pad(d.getMonth() + 1) + pad(d.getDate()) + 'T' + pad(d.getHours()) + pad(d.getMinutes()) + '00'; }
   $('remCal').onclick = function(){
-    var start = remTimeToday(), end = new Date(start.getTime() + 15 * 60000), now = new Date();
+    var start = remTimeToday(), now = new Date(), times = [start];
+    if (rem.repeat) { var iv = intervalMs(), endT = remEnd(); for (var t = start.getTime() + iv; t <= endT && times.length < 48; t += iv) times.push(new Date(t)); }
+    var len = Math.min(15 * 60000, rem.repeat ? intervalMs() : 15 * 60000);
     var url = location.href.split('#')[0].split('?')[0];
     var stamp = now.getUTCFullYear() + pad(now.getUTCMonth() + 1) + pad(now.getUTCDate()) + 'T' + pad(now.getUTCHours()) + pad(now.getUTCMinutes()) + pad(now.getUTCSeconds()) + 'Z';
-    var ics = ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Time tracker//Daily reminder//EN','CALSCALE:GREGORIAN','METHOD:PUBLISH',
-      'BEGIN:VEVENT','UID:time-tracker-daily-' + now.getTime() + '@time-tracker','DTSTAMP:' + stamp,
-      'DTSTART:' + icsTime(start),'DTEND:' + icsTime(end),'RRULE:FREQ=DAILY',
-      'SUMMARY:Fill in your Time tracker','DESCRIPTION:Color in what you did today. ' + url,'URL:' + url,
-      'BEGIN:VALARM','ACTION:DISPLAY','DESCRIPTION:Fill in your Time tracker','TRIGGER:PT0M','END:VALARM',
-      'END:VEVENT','END:VCALENDAR',''].join('\r\n');
+    var lines = ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Time tracker//Daily reminder//EN','CALSCALE:GREGORIAN','METHOD:PUBLISH'];
+    times.forEach(function(st, k){
+      lines.push('BEGIN:VEVENT','UID:time-tracker-daily-' + now.getTime() + '-' + k + '@time-tracker','DTSTAMP:' + stamp,
+        'DTSTART:' + icsTime(st),'DTEND:' + icsTime(new Date(st.getTime() + len)),'RRULE:FREQ=DAILY',
+        'SUMMARY:Fill in your Time tracker','DESCRIPTION:Color in what you did today. ' + url,'URL:' + url,
+        'BEGIN:VALARM','ACTION:DISPLAY','DESCRIPTION:Fill in your Time tracker','TRIGGER:PT0M','END:VALARM','END:VEVENT');
+    });
+    lines.push('END:VCALENDAR', '');
+    var ics = lines.join('\r\n');
     if (isIOS) {
       // iOS opens calendar data straight into "Add to Calendar".
       window.location.href = 'data:text/calendar;charset=utf-8,' + encodeURIComponent(ics);
@@ -954,11 +1007,15 @@ dialog h4{font-size:17px;margin:18px 0 4px}
       document.body.appendChild(a); a.click(); a.remove();
       setTimeout(function(){ URL.revokeObjectURL(blobUrl); }, 5000);
     }
-    $('remMsg').textContent = 'Open the file and choose Add to add a daily ' + remLabel() + ' reminder to your calendar.';
+    var last = times[times.length - 1];
+    $('remMsg').textContent = times.length > 1
+      ? 'Open the file and choose Add All. You\'ll get ' + times.length + ' calendar alerts a day, from ' + remLabel() + ' to ' + hm(pad(last.getHours()) + ':' + pad(last.getMinutes())) + '. Calendar alerts can\'t tell whether you\'ve filled in the day, so they always go off.'
+      : 'Open the file and choose Add to add a daily ' + remLabel() + ' reminder to your calendar.';
   };
   $('remDone').onclick = function(){ if (rdlg.close) rdlg.close(); else rdlg.removeAttribute('open'); };
   $('nudgeGo').onclick = function(){ cur = new Date(); cur.setHours(0,0,0,0); scrolledToNow = false; setView('day'); };
-  $('nudgeLater').onclick = function(){ meta.nudgeHidden = dkey(new Date()); saveMeta(); checkReminder(); };
+  // "Later" hides the banner until the next repeat (or until tomorrow if repeats are off).
+  $('nudgeLater').onclick = function(){ meta.nudgeHiddenAt = currentSlot(Date.now()); saveMeta(); checkReminder(); };
   remStatus();
   var lastNarrow = null;
   window.addEventListener('resize', function(){ var n = window.matchMedia('(max-width:430px)').matches; if (n !== lastNarrow) { lastNarrow = n; if (view === 'day') renderDay(); } });

@@ -1,5 +1,5 @@
 // Time tracker offline support. Bump VERSION whenever you change index.html.
-const VERSION = 'tt-v2';
+const VERSION = 'tt-v3';
 const REMINDER = 'tt-reminder'; // reminder settings copied here by the page
 const SHELL = [
   './',
@@ -63,13 +63,23 @@ async function maybeRemind() {
   if (!hit) return;
   const r = await hit.json();
   const now = new Date(), today = dkey(now);
-  const [h, m] = String(r.time || '21:00').split(':').map(Number);
-  const at = new Date(now); at.setHours(h, m, 0, 0);
-  if (!r.on || r.filled === today || r.notified === today || now < at) return;
-  r.notified = today;
+  const at = (hhmm) => { const [h, m] = String(hhmm).split(':').map(Number); const t = new Date(now); t.setHours(h, m, 0, 0); return t.getTime(); };
+  const start = at(r.time || '21:00');
+  if (!r.on || r.filled === today || now.getTime() < start) return;
+  // Same slots as the page: the start time, then every interval until the "until" time (or midnight).
+  let slot = start;
+  if (r.repeat) {
+    const iv = Math.max(1, (+r.every || 30) * (r.unit === 'hr' ? 60 : 1)) * 60000;
+    let end = at(r.until || '23:00');
+    if (end <= start) { const e = new Date(now); e.setHours(23, 59, 59, 999); end = e.getTime(); }
+    slot = start + Math.floor((Math.min(now.getTime(), end) - start) / iv) * iv;
+  }
+  if ((r.notifiedAt || 0) >= slot) return;
+  const again = (r.notifiedAt || 0) >= start;
+  r.notifiedAt = now.getTime();
   await c.put('reminder.json', new Response(JSON.stringify(r), { headers: { 'Content-Type': 'application/json' } }));
   await self.registration.showNotification('Time tracker', {
-    body: "You haven't colored in today yet. Take a minute to fill in your day.",
+    body: again ? 'Still not filled in today. Take a minute to color in your day.' : "You haven't colored in today yet. Take a minute to fill in your day.",
     icon: 'icons/icon-192.png', badge: 'icons/icon-192.png', tag: 'daily-reminder'
   });
 }
