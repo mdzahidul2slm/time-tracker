@@ -1,5 +1,6 @@
 // Time tracker offline support. Bump VERSION whenever you change index.html.
-const VERSION = 'tt-v1';
+const VERSION = 'tt-v2';
+const REMINDER = 'tt-reminder'; // reminder settings copied here by the page
 const SHELL = [
   './',
   './index.html',
@@ -17,7 +18,7 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== VERSION).map((k) => caches.delete(k))))
+      .then((keys) => Promise.all(keys.filter((k) => k !== VERSION && k !== REMINDER).map((k) => caches.delete(k))))
       .then(() => self.clients.claim())
   );
 });
@@ -49,5 +50,39 @@ self.addEventListener('fetch', (event) => {
         return hit || fresh;
       })
     )
+  );
+});
+
+// Daily reminder. Android Chrome (installed app) wakes this up now and then;
+// other devices rely on the page and the calendar reminder.
+function pad(n) { return (n < 10 ? '0' : '') + n; }
+function dkey(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+async function maybeRemind() {
+  const c = await caches.open(REMINDER);
+  const hit = await c.match('reminder.json');
+  if (!hit) return;
+  const r = await hit.json();
+  const now = new Date(), today = dkey(now);
+  const [h, m] = String(r.time || '21:00').split(':').map(Number);
+  const at = new Date(now); at.setHours(h, m, 0, 0);
+  if (!r.on || r.filled === today || r.notified === today || now < at) return;
+  r.notified = today;
+  await c.put('reminder.json', new Response(JSON.stringify(r), { headers: { 'Content-Type': 'application/json' } }));
+  await self.registration.showNotification('Time tracker', {
+    body: "You haven't colored in today yet. Take a minute to fill in your day.",
+    icon: 'icons/icon-192.png', badge: 'icons/icon-192.png', tag: 'daily-reminder'
+  });
+}
+self.addEventListener('periodicsync', (event) => {
+  if (event.tag === 'daily-reminder') event.waitUntil(maybeRemind());
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
+      for (const w of list) if ('focus' in w) return w.focus();
+      return self.clients.openWindow('./');
+    })
   );
 });

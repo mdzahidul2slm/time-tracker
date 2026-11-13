@@ -172,16 +172,88 @@ body{-webkit-touch-callout:none}
 kbd{font-family:inherit;font-weight:700;border:1.5px solid var(--grid-strong);border-radius:6px;padding:0 6px;background:var(--surface)}
 @media (prefers-reduced-motion: reduce){.pencil.on{transform:none}}
 @media (min-width:700px){:root{--row:30px}.timeline{grid-template-columns:96px 1fr}.nowline{left:90px}}
+
+/* ---------- fit every screen ---------- */
+.top{align-items:center}
+.headrow{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px}
+.headrow .top{flex:1 1 auto;min-width:0}
+.headrow .tabbar{flex:1 1 100%}
+.bell{flex-shrink:0;position:relative}
+.bell svg{width:22px;height:22px}
+.bell.on{background:var(--ink);color:var(--paper)}
+.datenav h2{font-size:clamp(22px,6.2vw,28px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+dialog{max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);overflow:auto;overscroll-behavior:contain}
+.mscroll{container-type:inline-size;max-width:calc(var(--dc,52px) + 964px)}
+.mgrid{--dc:52px;width:100%;grid-template-columns:var(--dc) repeat(48,minmax(0,1fr))}
+.mh{white-space:nowrap;overflow:visible}
+.hint .narrow{display:none}
+@container (max-width:640px){
+  .mgrid{--dc:40px}
+  .mdate{font-size:16px;padding:0 3px}
+  .mdate small{font-size:11px}
+  .mh.hr{font-size:13px}
+  .mh.hr.minor{color:transparent}
+  .mc.odd{border-left-color:transparent}
+}
+/* phones (portrait): tabs move to a bar at the bottom, header gets slim */
+@media (max-width:699px){
+  .sticky{padding-top:6px}
+  .clock{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;min-width:0}
+  .clock .time{font-size:34px}
+  .clock .date{font-size:14px}
+  .palette-head{margin-top:4px;font-size:13px}
+  .palette{padding-bottom:8px;scrollbar-width:none}
+  .palette::-webkit-scrollbar{display:none}
+  .pencil{min-height:42px;font-size:14px;padding:4px 12px 4px 5px}
+  .pencil .tip{width:26px;height:26px}
+  .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:20;margin:0;background:var(--paper);border-top:2px solid var(--ink);padding:6px max(8px,env(safe-area-inset-left,0px)) calc(6px + env(safe-area-inset-bottom,0px)) max(8px,env(safe-area-inset-right,0px))}
+  .tabbar .in{border-radius:12px}
+  .app{padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))}
+  .datenav{margin:12px 0 8px}
+  .hint .wide{display:none}.hint .narrow{display:inline}
+  .welcome{flex-direction:column;gap:8px}
+  .welcome .acts{flex-direction:row;align-items:center}
+}
+/* short screens (phone sideways): one slim header row, clock beside the tabs */
+@media (max-height:520px) and (min-width:700px){
+  .sticky{padding-top:4px}
+  .clock{display:flex;align-items:baseline;gap:10px}
+  .clock .time{font-size:28px}
+  .clock .date{font-size:13px}
+  .headrow{flex-wrap:nowrap}
+  .headrow .tabbar{flex:0 1 auto;margin:0}
+  .tab{min-height:40px;padding:2px 10px;font-size:14px}
+  .tab svg{width:20px;height:20px}
+  .palette-head{display:none}
+  .palette{padding:6px 2px 6px}
+  .pencil{min-height:40px;font-size:14px}
+  .pencil .tip{width:24px;height:24px}
+  .app{padding-bottom:calc(40px + env(safe-area-inset-bottom,0px))}
+}
+/* big screens: clock and tabs share a row */
+@media (min-width:1000px) and (min-height:521px){
+  .headrow{flex-wrap:nowrap}
+  .headrow .tabbar{flex:0 1 560px;margin:0}
+}
+
+/* daily reminder */
+.rem-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;margin:0 0 6px}
+.rem-row input[type=time]{width:auto;min-width:130px;height:44px;border:2px solid var(--grid-strong);border-radius:10px;padding:0 10px;background:var(--surface);font-size:17px;color:var(--ink)}
+dialog h4{font-size:17px;margin:18px 0 4px}
+.okmsg{font-weight:700;margin:10px 0 0;min-height:1em}
+.remind.nudge{background:#E3EEFF;border-color:#2E6CCB}
 </style>
 </head>
 <body>
 <div class="app">
   <div class="sticky">
+    <div class="headrow">
     <div class="top">
       <div class="clock" aria-live="off">
         <div class="time" id="clockTime">--:--</div>
         <div class="date" id="clockDate"></div>
       </div>
+      <button class="icon bell" id="remBtn" aria-label="Daily reminder" title="Daily reminder"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 0 1 12 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg></button>
     </div>
     <nav class="tabbar" aria-label="App">
   <div class="in" role="tablist">
@@ -192,6 +264,13 @@ kbd{font-family:inherit;font-weight:700;border:1.5px solid var(--grid-strong);bo
     <button class="tab" id="tabInstall" aria-selected="false"><svg viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="2"><rect x="7" y="2" width="12" height="22" rx="3"/><path d="M13 7v8M10 12l3 3 3-3"/></svg>Install</button>
   </div>
 </nav>
+    </div>
+    <div class="remind nudge" id="nudge" hidden role="status">
+      <span class="ico" aria-hidden="true">✏️</span>
+      <p><b>Fill in today</b>You haven't colored in today yet.</p>
+      <button class="go" id="nudgeGo">Fill in</button>
+      <button class="later" id="nudgeLater">Later</button>
+    </div>
     <div class="remind" id="remind" hidden role="status">
       <span class="ico" aria-hidden="true" id="remindIco">💾</span>
       <p id="remindText"></p>
@@ -232,7 +311,7 @@ kbd{font-family:inherit;font-weight:700;border:1.5px solid var(--grid-strong);bo
       <label class="switch"><input type="checkbox" id="drawToggle"> Draw here</label>
     </nav>
     <div class="mscroll" id="mscroll"><div class="mgrid" id="mgrid"></div></div>
-    <p class="hint" id="mHint">Tap a day to open it. Turn on "Draw here" to color straight onto the month page.</p>
+    <p class="hint" id="mHint">Tap a day to open it. Turn on "Draw here" to color straight onto the month page.<span class="narrow"> Turn your phone sideways for bigger squares.</span></p>
   </section>
 
   <footer id="status">Saved on this device.</footer>
@@ -270,6 +349,21 @@ kbd{font-family:inherit;font-weight:700;border:1.5px solid var(--grid-strong);bo
   <button class="pill" id="restorePaste">Restore from text</button>
   <p id="backupMsg" role="status" style="font-weight:700;margin:12px 0 0"></p>
   <div class="dlg-actions"><span></span><button class="primary" id="backupDone">Done</button></div>
+</dialog>
+
+<dialog id="remDlg" aria-labelledby="remTitle">
+  <h3 id="remTitle">Daily reminder</h3>
+  <p>Get a nudge every day to color in your chart. It's skipped on days you've already filled in.</p>
+  <div class="rem-row">
+    <label class="switch"><input type="checkbox" id="remOn"> Remind me every day</label>
+    <label class="switch">at <input type="time" id="remTime" value="21:00"></label>
+  </div>
+  <p class="note" id="remStatus"></p>
+  <h4>Never miss it</h4>
+  <p class="note">Phones only let a web app send notifications while it's open or was used recently. Add the reminder to your calendar too and it will pop up every day, even when the app is closed.</p>
+  <button class="pill" id="remCal" style="margin-top:8px">Add to my calendar</button>
+  <p class="okmsg" id="remMsg" role="status"></p>
+  <div class="dlg-actions"><button class="pill" id="remTest">Send a test</button><button class="primary" id="remDone">Done</button></div>
 </dialog>
 
 <dialog id="dlg" aria-labelledby="dlgTitle">
@@ -463,7 +557,7 @@ kbd{font-family:inherit;font-weight:700;border:1.5px solid var(--grid-strong);bo
     var n = new Date(), h = n.getHours();
     $('clockTime').textContent = ((h % 12) || 12) + ':' + pad(n.getMinutes()) + (h < 12 ? ' AM' : ' PM');
     $('clockDate').textContent = WEEK[n.getDay()] + ', ' + MONTHS[n.getMonth()] + ' ' + n.getDate();
-    placeNow(); updateReminder();
+    placeNow(); updateReminder(); checkReminder();
     var slot = h * 2 + (n.getMinutes() >= 30 ? 1 : 0);
     if (view === 'month' && tick.slot !== undefined && tick.slot !== slot && !painting) renderMonth();
     tick.slot = slot;
@@ -495,7 +589,8 @@ kbd{font-family:inherit;font-weight:700;border:1.5px solid var(--grid-strong);bo
   /* ---------- day view ---------- */
   function renderDay(){
     var acts = actMap(), arr = getDay(cur, false) || normalize(null), h = '';
-    $('dTitle').textContent = WEEK[cur.getDay()] + ', ' + MONTHS[cur.getMonth()].slice(0,3) + ' ' + cur.getDate();
+    var narrow = window.matchMedia && window.matchMedia('(max-width:430px)').matches;
+    $('dTitle').textContent = (narrow ? WEEK[cur.getDay()].slice(0,3) : WEEK[cur.getDay()]) + ', ' + MONTHS[cur.getMonth()].slice(0,3) + ' ' + cur.getDate();
     for (var i = 0; i < SLOTS; i++) {
       if (i % 2 === 0) h += '<div class="tl-label' + (i === 0 ? ' first' : '') + (i === 24 ? ' noon' : '') + '" style="grid-row:' + (i + 1) + '/span 2">' + hourLabel(i / 2) + '</div>';
       var id = arr[i], a = id ? acts[id] : null, start = id && (i === 0 || arr[i - 1] !== id);
@@ -531,7 +626,7 @@ kbd{font-family:inherit;font-weight:700;border:1.5px solid var(--grid-strong);bo
     h += '<div class="mh corner" style="grid-row:1/span 2;grid-column:1"></div>';
     h += '<div class="mh ampm" style="grid-row:1;grid-column:2/span 24">AM</div>';
     h += '<div class="mh ampm pm" style="grid-row:1;grid-column:26/span 24">PM</div>';
-    for (var hr = 0; hr < 24; hr++) h += '<div class="mh hr' + (hr === 12 ? ' h12' : '') + '" style="grid-row:2;grid-column:' + (2 + hr * 2) + '/span 2">' + ((hr % 12) || 12) + '</div>';
+    for (var hr = 0; hr < 24; hr++) h += '<div class="mh hr' + (hr === 12 ? ' h12' : '') + (hr % 2 ? ' minor' : '') + '" style="grid-row:2;grid-column:' + (2 + hr * 2) + '/span 2">' + ((hr % 12) || 12) + '</div>';
     for (var d = 1; d <= days; d++) {
       var row = d + 2, date = new Date(y, m, d), arr = getDay(date, false), today = sameDay(date, now);
       h += '<button class="mdate' + (today ? ' today' : '') + '" data-open="' + d + '" style="grid-row:' + row + ';grid-column:1" aria-label="Open ' + WEEK[date.getDay()] + ' ' + MONTHS[m] + ' ' + d + '"><b>' + d + '</b><small>' + WEEK[date.getDay()].charAt(0) + '</small></button>';
@@ -585,7 +680,7 @@ kbd{font-family:inherit;font-weight:700;border:1.5px solid var(--grid-strong);bo
     var p = painting; painting = null;
     if (!p.moved && p.val && p.orig === p.val) p.arr[p.first] = '';
     if (p.arr.every(function(x){ return !x; })) { var mm = state.months[mkey(p.date)]; if (mm) delete mm.days[p.date.getDate()]; }
-    saveLocal(); queueSave('m-' + mkey(p.date)); render(); noteEntry();
+    saveLocal(); queueSave('m-' + mkey(p.date)); render(); noteEntry(); checkReminder();
   }
   ['timeline','mgrid'].forEach(function(id){ $(id).addEventListener('pointerdown', onDown); });
   window.addEventListener('pointermove', onMove, { passive: false });
@@ -759,8 +854,117 @@ kbd{font-family:inherit;font-weight:700;border:1.5px solid var(--grid-strong);bo
   dlg.addEventListener('close', function(){ saveLocal(); queueSave('activities'); renderPalette(); render(); });
   function openEditor(){ renderEditor(); if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', ''); }
 
+  /* ---------- daily reminder ---------- */
+  var rem = { on: false, time: '21:00' };
+  try { var r0 = JSON.parse(localStorage.getItem(LS + '-reminder') || 'null'); if (r0) { rem.on = !!r0.on; if (/^\d\d:\d\d$/.test(r0.time)) rem.time = r0.time; } } catch(e) {}
+  var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || isPad;
+  var canNotify = 'Notification' in window;
+  function dkey(d){ return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+  function todayFilled(){ var a = getDay(new Date(), false); return !!(a && a.some(Boolean)); }
+  function remTimeToday(){ var p = rem.time.split(':'), t = new Date(); t.setHours(+p[0], +p[1], 0, 0); return t; }
+  function remLabel(){ var p = rem.time.split(':'), h = +p[0]; return ((h % 12) || 12) + ':' + p[1] + (h < 12 ? ' AM' : ' PM'); }
+  function saveRem(){ try { localStorage.setItem(LS + '-reminder', JSON.stringify(rem)); } catch(e) {} syncRemToSW(); }
+  // The service worker can't read localStorage, so it gets a copy of the settings in its own cache.
+  function syncRemToSW(){
+    if (!('caches' in window)) return;
+    var data = { on: rem.on, time: rem.time, filled: todayFilled() ? dkey(new Date()) : '', notified: meta.lastRemind || '' };
+    caches.open('tt-reminder').then(function(c){ return c.put('reminder.json', new Response(JSON.stringify(data), { headers: { 'Content-Type': 'application/json' } })); }).catch(function(){});
+  }
+  function showNote(title, body){
+    var opts = { body: body, icon: 'icons/icon-192.png', badge: 'icons/icon-192.png', tag: 'daily-reminder', renotify: true };
+    var plain = function(){ try { new Notification(title, opts); } catch(e) {} };
+    if (navigator.serviceWorker && navigator.serviceWorker.getRegistration) {
+      return navigator.serviceWorker.getRegistration().then(function(r){ return r ? r.showNotification(title, opts) : plain(); }).catch(plain);
+    }
+    plain(); return Promise.resolve();
+  }
+  function checkReminder(){
+    var due = rem.on && !todayFilled() && Date.now() >= remTimeToday().getTime();
+    var today = dkey(new Date());
+    $('nudge').hidden = !due || meta.nudgeHidden === today;
+    if (due && meta.lastRemind !== today && document.hidden && canNotify && Notification.permission === 'granted') {
+      meta.lastRemind = today; saveMeta(); syncRemToSW();
+      showNote('Time tracker', 'You haven\'t colored in today yet. Take a minute to fill in your day.');
+    }
+    if (checkReminder.filled !== todayFilled()) { checkReminder.filled = todayFilled(); syncRemToSW(); }
+  }
+  function setBackgroundCheck(on){
+    if (!navigator.serviceWorker) return;
+    navigator.serviceWorker.ready.then(function(reg){
+      if (!reg.periodicSync) return;
+      if (!on) return reg.periodicSync.unregister('daily-reminder');
+      return navigator.permissions.query({ name: 'periodic-background-sync' }).then(function(s){
+        if (s.state === 'granted') return reg.periodicSync.register('daily-reminder', { minInterval: 4 * 3600 * 1000 });
+      });
+    }).catch(function(){});
+  }
+  function remStatus(){
+    var t, standalone2 = standalone;
+    if (!rem.on) t = 'Reminder is off.';
+    else if (!canNotify) t = isIOS && !standalone2
+      ? 'On iPhone and iPad, notifications only work once Time tracker is on your Home Screen (see Install). Until then you\'ll see a reminder at the top of the app after ' + remLabel() + '.'
+      : 'This browser can\'t show notifications, so you\'ll see a reminder at the top of the app after ' + remLabel() + '.';
+    else if (Notification.permission === 'denied') t = 'Notifications are blocked for this app. Allow them in your device or browser settings, or use the calendar reminder below. You\'ll still see a reminder at the top of the app.';
+    else if (Notification.permission === 'granted') t = 'On. You\'ll get a reminder at ' + remLabel() + ' on days you haven\'t filled in.';
+    else t = 'Allow notifications when asked so the reminder can reach you.';
+    $('remStatus').textContent = t;
+    $('remBtn').classList.toggle('on', rem.on);
+  }
+  function askPermission(){
+    if (!canNotify || Notification.permission !== 'default') { remStatus(); return Promise.resolve(); }
+    var p; try { p = Notification.requestPermission(remStatus); } catch(e) {}
+    return (p && p.then ? p : Promise.resolve()).then(remStatus);
+  }
+  var rdlg = $('remDlg');
+  function openRem(){
+    $('remOn').checked = rem.on; $('remTime').value = rem.time; $('remMsg').textContent = '';
+    remStatus(); if (rdlg.showModal) rdlg.showModal(); else rdlg.setAttribute('open', '');
+  }
+  $('remBtn').onclick = openRem;
+  $('remOn').onchange = function(e){
+    rem.on = e.target.checked; saveRem(); setBackgroundCheck(rem.on); checkReminder();
+    if (rem.on) askPermission().then(function(){ setBackgroundCheck(true); }); else remStatus();
+  };
+  $('remTime').onchange = function(e){ if (/^\d\d:\d\d$/.test(e.target.value)) { rem.time = e.target.value; saveRem(); remStatus(); checkReminder(); } };
+  $('remTest').onclick = function(){
+    if (!canNotify) { $('remMsg').textContent = 'Notifications aren\'t available here. Try the calendar reminder instead.'; return; }
+    askPermission().then(function(){
+      if (Notification.permission !== 'granted') { $('remMsg').textContent = 'Notifications aren\'t allowed yet, so the test couldn\'t be sent.'; return; }
+      showNote('Time tracker', 'This is how your daily reminder will look.');
+      $('remMsg').textContent = 'Test sent.';
+    });
+  };
+  function icsTime(d){ return d.getFullYear() + pad(d.getMonth() + 1) + pad(d.getDate()) + 'T' + pad(d.getHours()) + pad(d.getMinutes()) + '00'; }
+  $('remCal').onclick = function(){
+    var start = remTimeToday(), end = new Date(start.getTime() + 15 * 60000), now = new Date();
+    var url = location.href.split('#')[0].split('?')[0];
+    var stamp = now.getUTCFullYear() + pad(now.getUTCMonth() + 1) + pad(now.getUTCDate()) + 'T' + pad(now.getUTCHours()) + pad(now.getUTCMinutes()) + pad(now.getUTCSeconds()) + 'Z';
+    var ics = ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Time tracker//Daily reminder//EN','CALSCALE:GREGORIAN','METHOD:PUBLISH',
+      'BEGIN:VEVENT','UID:time-tracker-daily-' + now.getTime() + '@time-tracker','DTSTAMP:' + stamp,
+      'DTSTART:' + icsTime(start),'DTEND:' + icsTime(end),'RRULE:FREQ=DAILY',
+      'SUMMARY:Fill in your Time tracker','DESCRIPTION:Color in what you did today. ' + url,'URL:' + url,
+      'BEGIN:VALARM','ACTION:DISPLAY','DESCRIPTION:Fill in your Time tracker','TRIGGER:PT0M','END:VALARM',
+      'END:VEVENT','END:VCALENDAR',''].join('\r\n');
+    if (isIOS) {
+      // iOS opens calendar data straight into "Add to Calendar".
+      window.location.href = 'data:text/calendar;charset=utf-8,' + encodeURIComponent(ics);
+    } else {
+      var blobUrl = URL.createObjectURL(new Blob([ics], { type: 'text/calendar' }));
+      var a = document.createElement('a'); a.href = blobUrl; a.download = 'time-tracker-reminder.ics';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function(){ URL.revokeObjectURL(blobUrl); }, 5000);
+    }
+    $('remMsg').textContent = 'Open the file and choose Add to add a daily ' + remLabel() + ' reminder to your calendar.';
+  };
+  $('remDone').onclick = function(){ if (rdlg.close) rdlg.close(); else rdlg.removeAttribute('open'); };
+  $('nudgeGo').onclick = function(){ cur = new Date(); cur.setHours(0,0,0,0); scrolledToNow = false; setView('day'); };
+  $('nudgeLater').onclick = function(){ meta.nudgeHidden = dkey(new Date()); saveMeta(); checkReminder(); };
+  remStatus();
+  var lastNarrow = null;
+  window.addEventListener('resize', function(){ var n = window.matchMedia('(max-width:430px)').matches; if (n !== lastNarrow) { lastNarrow = n; if (view === 'day') renderDay(); } });
+
   /* ---------- start ---------- */
-  renderPalette(); tick(); render();
+  renderPalette(); tick(); render(); syncRemToSW();
   setInterval(tick, 15000);
   document.addEventListener('visibilitychange', function(){ if (!document.hidden) tick(); });
   connect();
