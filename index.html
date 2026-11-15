@@ -211,6 +211,10 @@ dialog{max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);overflow:aut
   .app{padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))}
   .datenav{margin:12px 0 8px}
   .hint .wide{display:none}.hint .narrow{display:inline}
+  .remind{flex-wrap:wrap;gap:6px 10px;padding:8px 10px}
+  .remind p{flex:1 1 calc(100% - 40px);font-size:14px}
+  .remind .go{margin-left:32px;min-height:36px}
+  .remind .later{min-height:36px}
   .welcome{flex-direction:column;gap:8px}
   .welcome .acts{flex-direction:row;align-items:center}
 }
@@ -246,6 +250,60 @@ dialog{max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);overflow:aut
 dialog h4{font-size:17px;margin:18px 0 4px}
 .okmsg{font-weight:700;margin:10px 0 0;min-height:1em}
 .remind.nudge{background:#E3EEFF;border-color:#2E6CCB}
+
+/* report dashboard */
+body[data-view="report"] .palette-head,body[data-view="report"] .palette{display:none}
+body[data-view="report"] .sticky{padding-bottom:8px}
+.toreport{display:block;margin:-6px 0 6px;font-size:15px}
+.rhead{margin:14px 0 0}
+.rhead .seg{display:inline-flex}
+.rhead .seg button{min-width:90px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:0 0 12px}
+.card{background:var(--surface);border:2px solid var(--ink);border-radius:12px;padding:10px 12px;min-width:0}
+.card .k{font-size:13px;color:var(--ink-soft);font-weight:700}
+.card .v{font-family:var(--hand);font-size:30px;line-height:1.1;margin:2px 0;overflow-wrap:anywhere}
+.card .s{font-size:13px;color:var(--ink-soft);display:flex;align-items:center;gap:6px;min-width:0}
+.card .s i{width:10px;height:10px;border-radius:3px;background:var(--c);flex-shrink:0}
+.panel{background:var(--surface);border:2px solid var(--ink);border-radius:12px;padding:12px 14px;margin:0 0 12px}
+.panel h3{font-family:var(--hand);font-weight:400;font-size:24px;margin:0 0 10px;display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.panel h3 small{font-family:var(--body);font-size:13px;color:var(--ink-soft)}
+.dstrip{display:flex;gap:2px;height:30px}
+.dstrip i{border-radius:4px;background:var(--c);min-width:2px;cursor:default}
+.dstrip i.gap{background:color-mix(in srgb,var(--grid) 70%,transparent)}
+.axis{display:flex;justify-content:space-between;font-size:12px;color:var(--ink-soft);margin-top:4px}
+.brow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;padding:9px 0;border-top:1px solid var(--grid)}
+.brow:first-of-type{border-top:0;padding-top:0}
+.brow .nm{display:flex;align-items:center;gap:8px;font-weight:700;min-width:0}
+.brow .nm span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.brow .nm i{width:14px;height:14px;border-radius:4px;background:var(--c);flex-shrink:0}
+.brow .dur{font-weight:700;text-align:right;white-space:nowrap}
+.brow .track{grid-column:1/-1;height:10px;border-radius:4px;background:color-mix(in srgb,var(--grid) 60%,transparent);overflow:hidden}
+.brow .track b{display:block;height:100%;border-radius:4px;background:var(--c)}
+.brow .meta{grid-column:1/-1;font-size:13px;color:var(--ink-soft);display:flex;gap:4px 14px;flex-wrap:wrap}
+.wplot{position:relative;height:200px;margin:6px 0 0 36px}
+.wgrid{position:absolute;left:0;right:0;border-top:1px solid var(--grid);pointer-events:none}
+.wgrid span{position:absolute;right:calc(100% + 6px);top:-8px;font-size:11px;color:var(--ink-soft);white-space:nowrap}
+.wcols{position:absolute;inset:0;display:flex;gap:6px}
+.wcol{flex:1;min-width:0;display:flex;flex-direction:column-reverse;gap:2px;border:0;padding:0;background:none;cursor:pointer;border-radius:4px}
+.wcol:hover,.wcol:focus-visible{background:color-mix(in srgb,var(--ink) 6%,transparent)}
+.wcol i{display:block;background:var(--c);flex-shrink:0}
+.wcol i:last-child{border-radius:4px 4px 0 0}
+.wx{display:flex;gap:6px;margin:6px 0 0 36px}
+.wx span{flex:1;min-width:0;text-align:center;font-size:12px;color:var(--ink-soft);line-height:1.2}
+.wx span b{display:block;color:var(--ink)}
+.wx span.today b{background:var(--today);border-radius:6px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:12px;font-size:13px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:12px;height:12px;border-radius:3px;background:var(--c)}
+.rtip{position:absolute;z-index:4;pointer-events:none;background:var(--surface);border:2px solid var(--ink);border-radius:10px;padding:8px 10px;font-size:13px;min-width:160px;max-width:220px;box-shadow:0 4px 14px rgba(0,0,0,.18)}
+.rtip b{display:block;margin-bottom:4px}
+.rtip div{display:flex;align-items:center;gap:6px;justify-content:space-between}
+.rtip div span{display:flex;align-items:center;gap:6px;min-width:0}
+.rtip i{width:10px;height:10px;border-radius:3px;background:var(--c);flex-shrink:0}
+.rempty{text-align:center;padding:26px 14px}
+.rempty p{color:var(--ink-soft);margin:0 0 12px}
+@media (min-width:900px){.rgrid{display:grid;grid-template-columns:1.1fr 1fr;gap:0 12px;align-items:start}}
+@media (max-height:520px) and (min-width:700px){.tab{padding:2px 8px}}
 </style>
 </head>
 <body>
@@ -263,6 +321,7 @@ dialog h4{font-size:17px;margin:18px 0 4px}
   <div class="in" role="tablist">
     <button class="tab" role="tab" id="tabDay" aria-selected="true"><svg viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="18" height="20" rx="3"/><rect class="f" x="8" y="8" width="10" height="4" rx="1"/><path d="M8 16h10"/></svg>Day</button>
     <button class="tab" role="tab" id="tabMonth" aria-selected="false"><svg viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="20" height="18" rx="3"/><path d="M3 10h20M9 10v12M15 10v12"/><rect class="f" x="16" y="12" width="5" height="4" fill="none" stroke="none"/></svg>Month</button>
+    <button class="tab" role="tab" id="tabReport" aria-selected="false"><svg viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 22h18"/><path d="M7 18v-6M13 18V6M19 18v-9"/></svg>Report</button>
     <button class="tab" id="tabColors" aria-selected="false"><svg viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 21l3-1 12-12-2-2L6 18z"/><path d="M15 7l3 3"/></svg>Colors</button>
     <button class="tab" id="tabBackup" aria-selected="false"><svg viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 9h16v13H5z"/><path d="M3 5h20v4H3z"/><path d="M10 14h6"/></svg>Backup<span class="dot" id="backupDot" hidden></span></button>
     <button class="tab" id="tabInstall" aria-selected="false"><svg viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="2"><rect x="7" y="2" width="12" height="22" rx="3"/><path d="M13 7v8M10 12l3 3 3-3"/></svg>Install</button>
@@ -300,6 +359,7 @@ dialog h4{font-size:17px;margin:18px 0 4px}
       <button class="pill" id="dToday">Today</button>
     </nav>
     <div class="totals" id="totals"></div>
+    <button class="linkbtn toreport" id="toReport">See the full report for this day and week ›</button>
     <div class="tl-wrap">
       <div class="timeline" id="timeline" role="grid" aria-label="Half-hour slots"></div>
       <div class="nowline" id="nowLine" hidden><b id="nowText"></b></div>
@@ -316,6 +376,22 @@ dialog h4{font-size:17px;margin:18px 0 4px}
     </nav>
     <div class="mscroll" id="mscroll"><div class="mgrid" id="mgrid"></div></div>
     <p class="hint" id="mHint">Tap a day to open it. Turn on "Draw here" to color straight onto the month page.<span class="narrow"> Turn your phone sideways for bigger squares.</span></p>
+  </section>
+
+  <section id="reportView" hidden>
+    <div class="rhead">
+      <div class="seg" role="tablist" aria-label="Report period">
+        <button role="tab" id="rDay" aria-selected="true">Day</button>
+        <button role="tab" id="rWeek" aria-selected="false">Week</button>
+      </div>
+    </div>
+    <nav class="datenav" aria-label="Report date">
+      <button class="icon" id="rPrev" aria-label="Previous">‹</button>
+      <button class="icon" id="rNext" aria-label="Next">›</button>
+      <h2 id="rTitle"></h2>
+      <button class="pill" id="rToday">Today</button>
+    </nav>
+    <div id="report"></div>
   </section>
 
   <footer id="status">Saved on this device.</footer>
@@ -651,7 +727,155 @@ dialog h4{font-size:17px;margin:18px 0 4px}
     var g = $('mgrid'); g.innerHTML = h; g.classList.toggle('draw', drawOn);
   }
 
-  function render(){ if (view === 'day') renderDay(); else renderMonth(); }
+  function render(){ if (view === 'day') renderDay(); else if (view === 'report') renderReport(); else renderMonth(); }
+
+  /* ---------- report dashboard ---------- */
+  var rMode = 'day', WEEK_START = 0; // weeks run Sunday to Saturday
+  var DSHORT = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  function fmtMin(m){ var h = Math.floor(m / 60), r = m % 60; return h && r ? h + 'h ' + r + 'm' : h ? h + 'h' : r + 'm'; }
+  function slotTime(i){ return i >= SLOTS ? '12:00 AM' : slotLabel(i); }
+  function addDays(d, n){ return new Date(d.getFullYear(), d.getMonth(), d.getDate() + n); }
+  function weekStart(d){ return addDays(d, -((d.getDay() - WEEK_START + 7) % 7)); }
+  function actInfo(id, acts){ var a = acts[id]; return { name: a ? a.name : 'Removed color', color: okColor(a ? a.color : '#999999') }; }
+  // minutes per activity for one day, plus the colored runs in order
+  function dayStats(date){
+    var arr = getDay(date, false) || normalize(null), mins = {}, runs = [], total = 0;
+    for (var i = 0; i < SLOTS; i++) {
+      var id = arr[i];
+      if (id) { mins[id] = (mins[id] || 0) + 30; total += 30; }
+      var last = runs[runs.length - 1];
+      if (last && last.id === id) last.end = i + 1; else runs.push({ id: id, start: i, end: i + 1 });
+    }
+    return { mins: mins, runs: runs, total: total };
+  }
+  function sortedIds(mins){ return Object.keys(mins).sort(function(a, b){ return mins[b] - mins[a]; }); }
+  function delta(now, before, word){
+    var d = now - before;
+    if (d === 0) return 'same as ' + word;
+    return (d > 0 ? '+' : '−') + fmtMin(Math.abs(d)) + ' vs ' + word;
+  }
+  function card(k, v, s){ return '<div class="card"><div class="k">' + k + '</div><div class="v">' + v + '</div><div class="s">' + (s || '&nbsp;') + '</div></div>'; }
+  function breakdownRows(mins, total, prevMins, prevHas, word, perDay){
+    var acts = actMap(), ids = sortedIds(mins), max = ids.length ? mins[ids[0]] : 1;
+    return ids.map(function(id){
+      var a = actInfo(id, acts), m = mins[id], meta = [Math.round(m / total * 100) + '% of tracked time'];
+      if (perDay) meta.push(fmtMin(Math.round(m / perDay / 30) * 30 || 30) + ' a day on average');
+      if (prevHas) meta.push(delta(m, prevMins[id] || 0, word));
+      return '<div class="brow" style="--c:' + a.color + '"><div class="nm"><i></i><span>' + esc(a.name) + '</span></div><div class="dur">' + fmtMin(m) + '</div>' +
+        '<div class="track"><b style="width:' + (m / max * 100).toFixed(1) + '%"></b></div><div class="meta">' + meta.map(function(x){ return '<span>' + x + '</span>'; }).join('') + '</div></div>';
+    }).join('');
+  }
+  function emptyPanel(text){ return '<div class="panel rempty"><p>' + text + '</p><button class="primary" data-go="day">Color in this day</button></div>'; }
+
+  function renderReport(){
+    $('rDay').setAttribute('aria-selected', rMode === 'day');
+    $('rWeek').setAttribute('aria-selected', rMode === 'week');
+    $('rPrev').setAttribute('aria-label', rMode === 'day' ? 'Previous day' : 'Previous week');
+    $('rNext').setAttribute('aria-label', rMode === 'day' ? 'Next day' : 'Next week');
+    if (rMode === 'day') renderDayReport(); else renderWeekReport();
+  }
+
+  function renderDayReport(){
+    var acts = actMap(), narrow = window.matchMedia && window.matchMedia('(max-width:430px)').matches;
+    $('rTitle').textContent = (narrow ? DSHORT[cur.getDay()] : WEEK[cur.getDay()]) + ', ' + MONTHS[cur.getMonth()].slice(0,3) + ' ' + cur.getDate();
+    var st = dayStats(cur), prev = dayStats(addDays(cur, -1));
+    if (!st.total) { $('report').innerHTML = emptyPanel('Nothing colored in for this day yet.'); return; }
+    var ids = sortedIds(st.mins), top = actInfo(ids[0], acts), longest = null;
+    st.runs.forEach(function(r){ if (r.id && (!longest || r.end - r.start > longest.end - longest.start)) longest = r; });
+    var la = actInfo(longest.id, acts);
+    var isToday = sameDay(cur, new Date());
+    var h = '<div class="cards">' +
+      card('Time tracked', fmtMin(st.total), prev.total ? esc(delta(st.total, prev.total, 'yesterday')) : 'of 24 hours') +
+      card(isToday ? 'Not filled in yet' : 'Not filled in', fmtMin(1440 - st.total), Math.round(st.total / 1440 * 100) + '% of the day is colored') +
+      card('Most time on', esc(top.name), '<i style="--c:' + top.color + '"></i>' + fmtMin(st.mins[ids[0]])) +
+      card('Longest stretch', fmtMin((longest.end - longest.start) * 30), '<i style="--c:' + la.color + '"></i><span>' + esc(la.name) + ', ' + slotTime(longest.start) + '–' + slotTime(longest.end) + '</span>') +
+      '</div>';
+    h += '<div class="rgrid"><div class="panel"><h3>Your day <small>' + ids.length + (ids.length === 1 ? ' activity' : ' activities') + '</small></h3><div class="dstrip">' +
+      st.runs.map(function(r){
+        var a = r.id ? actInfo(r.id, acts) : null, w = (r.end - r.start) / SLOTS * 100;
+        var label = (a ? a.name : 'Not filled in') + ', ' + slotTime(r.start) + '–' + slotTime(r.end) + ' (' + fmtMin((r.end - r.start) * 30) + ')';
+        return '<i' + (a ? ' style="flex:0 0 calc(' + w.toFixed(3) + '% - 2px);--c:' + a.color + '"' : ' class="gap" style="flex:0 0 calc(' + w.toFixed(3) + '% - 2px)"') + ' title="' + esc(label) + '" aria-label="' + esc(label) + '"></i>';
+      }).join('') +
+      '</div><div class="axis"><span>12 AM</span><span>6 AM</span><span>12 PM</span><span>6 PM</span><span>12 AM</span></div>' +
+      '<div class="legend">' + ids.map(function(id){ var a = actInfo(id, acts); return '<span style="--c:' + a.color + '"><i></i>' + esc(a.name) + '</span>'; }).join('') + '</div></div>';
+    h += '<div class="panel"><h3>Time on each thing</h3>' + breakdownRows(st.mins, st.total, prev.mins, prev.total > 0, 'yesterday') + '</div></div>';
+    $('report').innerHTML = h;
+  }
+
+  function renderWeekReport(){
+    var acts = actMap(), ws = weekStart(cur), we = addDays(ws, 6), today = new Date();
+    $('rTitle').textContent = MONTHS[ws.getMonth()].slice(0,3) + ' ' + ws.getDate() + ' – ' + (we.getMonth() !== ws.getMonth() ? MONTHS[we.getMonth()].slice(0,3) + ' ' : '') + we.getDate();
+    var days = [], mins = {}, total = 0, filled = 0, prevMins = {}, prevTotal = 0;
+    // A week in progress only counts days up to today, and is compared with the same days last week.
+    var elapsed = Math.max(0, Math.min(7, Math.floor((today.setHours(0,0,0,0) - ws) / 86400000) + 1)), partial = elapsed < 7;
+    var pword = partial ? 'the same days last week' : 'last week';
+    today = new Date();
+    for (var k = 0; k < 7; k++) {
+      var d = addDays(ws, k), st = dayStats(d);
+      days.push({ date: d, st: st });
+      if (st.total) filled++;
+      total += st.total;
+      Object.keys(st.mins).forEach(function(id){ mins[id] = (mins[id] || 0) + st.mins[id]; });
+      if (k >= elapsed) continue;
+      var p = dayStats(addDays(ws, k - 7));
+      prevTotal += p.total;
+      Object.keys(p.mins).forEach(function(id){ prevMins[id] = (prevMins[id] || 0) + p.mins[id]; });
+    }
+    if (!total) { $('report').innerHTML = emptyPanel('Nothing colored in for this week yet.'); return; }
+    var ids = sortedIds(mins), top = actInfo(ids[0], acts);
+    var best = days.reduce(function(b, x){ return !b || x.st.total > b.st.total ? x : b; }, null);
+    var h = '<div class="cards">' +
+      card('Time tracked', fmtMin(total), prevTotal ? esc(delta(total, prevTotal, pword)) : 'this week') +
+      card('Days filled in', filled + ' of ' + Math.max(elapsed, filled) + (partial ? ' so far' : ''), filled >= elapsed ? (partial ? 'Every day so far. Nice work!' : 'Every day. Nice work!') : (elapsed - filled) + (elapsed - filled === 1 ? ' day' : ' days') + ' left empty') +
+      card('Daily average', fmtMin(Math.round(total / filled / 30) * 30), 'on days you filled in') +
+      card('Most time on', esc(top.name), '<i style="--c:' + top.color + '"></i>' + fmtMin(mins[ids[0]]) + ' this week') +
+      '</div>';
+    // stacked columns, 0–24h axis, segments in the same order every day
+    h += '<div class="rgrid"><div class="panel"><h3>Each day <small>best: ' + DSHORT[best.date.getDay()] + ', ' + fmtMin(best.st.total) + '</small></h3><div class="wplot" id="wplot">';
+    [24, 18, 12, 6, 0].forEach(function(v){ h += '<div class="wgrid" style="top:' + ((24 - v) / 24 * 100) + '%"><span>' + v + 'h</span></div>'; });
+    h += '<div class="wcols">' + days.map(function(x, k){
+      var segs = ids.filter(function(id){ return x.st.mins[id]; }).map(function(id){
+        return '<i style="height:calc(' + (x.st.mins[id] / 1440 * 100).toFixed(3) + '% - 2px);--c:' + actInfo(id, acts).color + '"></i>';
+      }).join('');
+      return '<button class="wcol" data-k="' + k + '" aria-label="' + WEEK[x.date.getDay()] + ' ' + MONTHS[x.date.getMonth()] + ' ' + x.date.getDate() + ', ' + fmtMin(x.st.total) + ' tracked. Open day report.">' + segs + '</button>';
+    }).join('') + '</div></div><div class="wx">' + days.map(function(x){
+      return '<span' + (sameDay(x.date, today) ? ' class="today"' : '') + '><b>' + DSHORT[x.date.getDay()] + '</b>' + x.date.getDate() + '</span>';
+    }).join('') + '</div><div class="legend">' + ids.map(function(id){ var a = actInfo(id, acts); return '<span style="--c:' + a.color + '"><i></i>' + esc(a.name) + '</span>'; }).join('') + '</div>' +
+      '<p class="hint" style="margin-bottom:0">Tap a day to see its report.</p></div>';
+    h += '<div class="panel"><h3>Time on each thing <small>this week</small></h3>' + breakdownRows(mins, total, prevMins, prevTotal > 0, pword, filled) + '</div></div>';
+    $('report').innerHTML = h;
+    renderWeekReport.days = days; renderWeekReport.ids = ids;
+  }
+
+  // week chart: hover shows a day's breakdown, tap opens that day's report
+  function hideTip(){ var t = document.querySelector('.rtip'); if (t) t.remove(); }
+  $('report').addEventListener('pointerover', function(e){
+    var c = e.target.closest('.wcol'); if (!c || e.pointerType === 'touch') return;
+    var x = renderWeekReport.days[+c.getAttribute('data-k')], acts = actMap(), plot = $('wplot');
+    hideTip();
+    var tip = document.createElement('div'); tip.className = 'rtip';
+    var rows = renderWeekReport.ids.filter(function(id){ return x.st.mins[id]; }).map(function(id){
+      var a = actInfo(id, acts); return '<div style="--c:' + a.color + '"><span><i></i>' + esc(a.name) + '</span><span>' + fmtMin(x.st.mins[id]) + '</span></div>';
+    }).join('');
+    tip.innerHTML = '<b>' + WEEK[x.date.getDay()] + ', ' + MONTHS[x.date.getMonth()].slice(0,3) + ' ' + x.date.getDate() + ' · ' + fmtMin(x.st.total) + '</b>' + (rows || '<div>Nothing colored in</div>');
+    plot.appendChild(tip);
+    var cr = c.getBoundingClientRect(), pr = plot.getBoundingClientRect();
+    var left = cr.left - pr.left + cr.width / 2 - tip.offsetWidth / 2;
+    tip.style.left = Math.max(-30, Math.min(pr.width - tip.offsetWidth, left)) + 'px';
+    tip.style.top = '4px';
+  });
+  $('report').addEventListener('pointerout', function(e){ if (e.target.closest('.wcol') && !(e.relatedTarget && e.relatedTarget.closest && e.relatedTarget.closest('.wcol') === e.target.closest('.wcol'))) hideTip(); });
+  $('report').addEventListener('click', function(e){
+    var c = e.target.closest('.wcol');
+    if (c) { hideTip(); cur = renderWeekReport.days[+c.getAttribute('data-k')].date; rMode = 'day'; renderReport(); window.scrollTo({ top: 0 }); return; }
+    if (e.target.closest('[data-go="day"]')) { scrolledToNow = false; setView('day'); }
+  });
+  $('rDay').onclick = function(){ rMode = 'day'; renderReport(); };
+  $('rWeek').onclick = function(){ rMode = 'week'; renderReport(); };
+  $('rPrev').onclick = function(){ cur = addDays(cur, rMode === 'day' ? -1 : -7); watchMonth(); renderReport(); };
+  $('rNext').onclick = function(){ cur = addDays(cur, rMode === 'day' ? 1 : 7); watchMonth(); renderReport(); };
+  $('rToday').onclick = function(){ cur = new Date(); cur.setHours(0,0,0,0); watchMonth(); renderReport(); };
+  $('toReport').onclick = function(){ rMode = 'day'; setView('report'); window.scrollTo({ top: 0 }); };
 
   /* ---------- painting ---------- */
   function paintEl(el, id){
@@ -713,8 +937,11 @@ dialog h4{font-size:17px;margin:18px 0 4px}
     view = v;
     $('tabDay').setAttribute('aria-selected', v === 'day');
     $('tabMonth').setAttribute('aria-selected', v === 'month');
+    $('tabReport').setAttribute('aria-selected', v === 'report');
     $('dayView').hidden = v !== 'day';
     $('monthView').hidden = v !== 'month';
+    $('reportView').hidden = v !== 'report';
+    document.body.setAttribute('data-view', v);
     $('palHint').textContent = v === 'day' ? 'Pick a color, then tap or drag down the hours' : 'Pick a color, then turn on "Draw here" to color the page';
     watchMonth(); render();
   }
@@ -722,6 +949,7 @@ dialog h4{font-size:17px;margin:18px 0 4px}
   function moveMonth(n){ cur = new Date(cur.getFullYear(), cur.getMonth() + n, 1); watchMonth(); render(); }
   $('tabDay').onclick = function(){ setView('day'); };
   $('tabMonth').onclick = function(){ setView('month'); };
+  $('tabReport').onclick = function(){ setView('report'); window.scrollTo({ top: 0 }); };
   $('tabColors').onclick = function(){ openEditor(); };
   $('tabInstall').onclick = function(){ openInstall(); };
   $('tabBackup').onclick = function(){ openBackup(); };
@@ -1018,9 +1246,10 @@ dialog h4{font-size:17px;margin:18px 0 4px}
   $('nudgeLater').onclick = function(){ meta.nudgeHiddenAt = currentSlot(Date.now()); saveMeta(); checkReminder(); };
   remStatus();
   var lastNarrow = null;
-  window.addEventListener('resize', function(){ var n = window.matchMedia('(max-width:430px)').matches; if (n !== lastNarrow) { lastNarrow = n; if (view === 'day') renderDay(); } });
+  window.addEventListener('resize', function(){ var n = window.matchMedia('(max-width:430px)').matches; if (n !== lastNarrow) { lastNarrow = n; if (view === 'day' || view === 'report') render(); } });
 
   /* ---------- start ---------- */
+  document.body.setAttribute('data-view', 'day');
   renderPalette(); tick(); render(); syncRemToSW();
   setInterval(tick, 15000);
   document.addEventListener('visibilitychange', function(){ if (!document.hidden) tick(); });

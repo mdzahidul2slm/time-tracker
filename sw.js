@@ -1,5 +1,5 @@
 // Time tracker offline support. Bump VERSION whenever you change index.html.
-const VERSION = 'tt-v3';
+const VERSION = 'tt-v4';
 const REMINDER = 'tt-reminder'; // reminder settings copied here by the page
 const SHELL = [
   './',
