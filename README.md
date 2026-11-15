@@ -18,4 +18,8 @@ Live app: https://mdzahidul2slm.github.io/time-tracker/
 2. In `sw.js`, change `VERSION` (for example `tt-v1` to `tt-v2`).
 3. Commit and push. Phones pick up the new version the next time the app is opened online, and show it on the open after that.
 
+4. Also update the Claude artifact copy (https://claude.ai/artifact/CfEpqX9rj6CSNq5g49YwZG):
+   run `python tools/build_artifact.py`, then publish `artifact/index.html` to that link.
+   The artifact runs the same app, with account sync and Claude's download prompt instead of offline support.
+
 People's charts are not affected by updates. They live in each device's storage, not in this repo.

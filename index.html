@@ -767,11 +767,26 @@ body[data-view="report"] .sticky{padding-bottom:8px}
   }
   function emptyPanel(text){ return '<div class="panel rempty"><p>' + text + '</p><button class="primary" data-go="day">Color in this day</button></div>'; }
 
+  // With account sync on, only the month on screen is watched; reports also need nearby months.
+  var fetchedMonths = {};
+  function ensureMonth(d){
+    var k = mkey(d);
+    if (!remote.col || fetchedMonths[k] || k === remote.monthKey) return;
+    fetchedMonths[k] = true;
+    var un = null, done = false;
+    un = remote.col.doc('m-' + k).onSnapshot(function(s){
+      if (done) return; done = true;
+      if (s.exists && !busy('m-' + k)) { state.months[k] = { days: (s.data() || {}).days || {} }; saveLocal(); if (view === 'report') renderReport(); }
+      setTimeout(function(){ if (un) un(); }, 0);
+    }, function(){});
+  }
   function renderReport(){
     $('rDay').setAttribute('aria-selected', rMode === 'day');
     $('rWeek').setAttribute('aria-selected', rMode === 'week');
     $('rPrev').setAttribute('aria-label', rMode === 'day' ? 'Previous day' : 'Previous week');
     $('rNext').setAttribute('aria-label', rMode === 'day' ? 'Next day' : 'Next week');
+    var ws = rMode === 'day' ? addDays(cur, -1) : addDays(weekStart(cur), -7);
+    ensureMonth(ws); ensureMonth(addDays(ws, 13)); ensureMonth(cur);
     if (rMode === 'day') renderDayReport(); else renderWeekReport();
   }
 
@@ -954,6 +969,12 @@ body[data-view="report"] .sticky{padding-bottom:8px}
   $('tabInstall').onclick = function(){ openInstall(); };
   $('tabBackup').onclick = function(){ openBackup(); };
 
+  /* saving files: inside a Claude artifact use its download prompt, elsewhere a normal download */
+  function claudeDownloads(){
+    if (!window.claude || typeof window.claude.use !== 'function') return Promise.resolve(null);
+    return window.claude.use('downloads').catch(function(){ return null; });
+  }
+
   /* backup and restore */
   var bdlg = $('backupDlg');
   function backupJSON(){ return JSON.stringify({ app: 'time-tracker', version: 1, savedAt: new Date().toISOString(), activities: state.activities, months: state.months }); }
@@ -971,6 +992,17 @@ body[data-view="report"] .sticky{padding-bottom:8px}
     var n = new Date(), name = 'time-tracker-backup-' + n.getFullYear() + '-' + pad(n.getMonth() + 1) + '-' + pad(n.getDate()) + '.json';
     var json = backupJSON(), file = null;
     function saved(){ bmsg('Backup saved as ' + name + '. Next one is due in 7 days.'); markBackedUp(); }
+    if (window.claude && typeof window.claude.use === 'function') {
+      claudeDownloads().then(function(dl){
+        if (!dl) { showCopy(); return; }
+        return dl.save({ filename: name, data: json }).then(saved).catch(function(e){
+          if (e && e.code === 'declined') bmsg('Backup not saved.');
+          else if (e && e.code === 'rate_limited') bmsg('A save is already waiting for you. Finish that one first.');
+          else showCopy();
+        });
+      });
+      return;
+    }
     function download(){
       try {
         var url = URL.createObjectURL(new Blob([json], { type: 'application/json' }));
@@ -1226,6 +1258,18 @@ body[data-view="report"] .sticky{padding-bottom:8px}
     });
     lines.push('END:VCALENDAR', '');
     var ics = lines.join('\r\n');
+    var okMsg = times.length > 1
+      ? 'Open the file and choose Add All. You\'ll get ' + times.length + ' calendar alerts a day, from ' + remLabel() + ' to ' + hm(pad(times[times.length - 1].getHours()) + ':' + pad(times[times.length - 1].getMinutes())) + '. Calendar alerts can\'t tell whether you\'ve filled in the day, so they always go off.'
+      : 'Open the file and choose Add to add a daily ' + remLabel() + ' reminder to your calendar.';
+    if (window.claude && typeof window.claude.use === 'function') {
+      claudeDownloads().then(function(dl){
+        if (!dl) { $('remMsg').textContent = 'Saving files isn\'t available here.'; return; }
+        return dl.save({ filename: 'time-tracker-reminder.ics', data: ics }).then(function(){ $('remMsg').textContent = okMsg; }).catch(function(e){
+          $('remMsg').textContent = e && e.code === 'declined' ? 'Calendar file not saved.' : 'The calendar file couldn\'t be saved. Try again.';
+        });
+      });
+      return;
+    }
     if (isIOS) {
       // iOS opens calendar data straight into "Add to Calendar".
       window.location.href = 'data:text/calendar;charset=utf-8,' + encodeURIComponent(ics);
@@ -1235,10 +1279,7 @@ body[data-view="report"] .sticky{padding-bottom:8px}
       document.body.appendChild(a); a.click(); a.remove();
       setTimeout(function(){ URL.revokeObjectURL(blobUrl); }, 5000);
     }
-    var last = times[times.length - 1];
-    $('remMsg').textContent = times.length > 1
-      ? 'Open the file and choose Add All. You\'ll get ' + times.length + ' calendar alerts a day, from ' + remLabel() + ' to ' + hm(pad(last.getHours()) + ':' + pad(last.getMinutes())) + '. Calendar alerts can\'t tell whether you\'ve filled in the day, so they always go off.'
-      : 'Open the file and choose Add to add a daily ' + remLabel() + ' reminder to your calendar.';
+    $('remMsg').textContent = okMsg;
   };
   $('remDone').onclick = function(){ if (rdlg.close) rdlg.close(); else rdlg.removeAttribute('open'); };
   $('nudgeGo').onclick = function(){ cur = new Date(); cur.setHours(0,0,0,0); scrolledToNow = false; setView('day'); };
